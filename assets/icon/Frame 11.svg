@@ -1,0 +1,57 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g filter="url(#filter0_d_11_319)">
+<rect x="7" y="4" width="34" height="34" rx="17" fill="#FFF3E8" shape-rendering="crispEdges"/>
+<rect x="6.5" y="3.5" width="35" height="35" rx="17.5" stroke="url(#paint0_linear_11_319)" shape-rendering="crispEdges"/>
+<g clip-path="url(#clip0_11_319)">
+<path d="M22 18C22 18.5304 22.2107 19.0391 22.5858 19.4142C22.9609 19.7893 23.4696 20 24 20C24.5304 20 25.0391 19.7893 25.4142 19.4142C25.7893 19.0391 26 18.5304 26 18C26 17.4696 25.7893 16.9609 25.4142 16.5858C25.0391 16.2107 24.5304 16 24 16C23.4696 16 22.9609 16.2107 22.5858 16.5858C22.2107 16.9609 22 17.4696 22 18Z" stroke="url(#paint1_linear_11_319)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M20 25C20 24.4696 20.2107 23.9609 20.5858 23.5858C20.9609 23.2107 21.4696 23 22 23H26C26.5304 23 27.0391 23.2107 27.4142 23.5858C27.7893 23.9609 28 24.4696 28 25" stroke="url(#paint2_linear_11_319)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M15 16V14C15 13.4696 15.2107 12.9609 15.5858 12.5858C15.9609 12.2107 16.4696 12 17 12H19" stroke="url(#paint3_linear_11_319)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M15 26V28C15 28.5304 15.2107 29.0391 15.5858 29.4142C15.9609 29.7893 16.4696 30 17 30H19" stroke="url(#paint4_linear_11_319)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M29 12H31C31.5304 12 32.0391 12.2107 32.4142 12.5858C32.7893 12.9609 33 13.4696 33 14V16" stroke="url(#paint5_linear_11_319)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M29 30H31C31.5304 30 32.0391 29.7893 32.4142 29.4142C32.7893 29.0391 33 28.5304 33 28V26" stroke="url(#paint6_linear_11_319)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_d_11_319" x="0" y="0" width="48" height="48" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="3"/>
+<feGaussianBlur stdDeviation="3"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.16 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_11_319"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_11_319" result="shape"/>
+</filter>
+<linearGradient id="paint0_linear_11_319" x1="7" y1="4" x2="41" y2="38" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EC6D43"/>
+<stop offset="1" stop-color="#FFB670"/>
+</linearGradient>
+<linearGradient id="paint1_linear_11_319" x1="22" y1="16" x2="26" y2="20" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EC6D43"/>
+<stop offset="1" stop-color="#FFB670"/>
+</linearGradient>
+<linearGradient id="paint2_linear_11_319" x1="20" y1="23" x2="20.9412" y2="26.7647" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EC6D43"/>
+<stop offset="1" stop-color="#FFB670"/>
+</linearGradient>
+<linearGradient id="paint3_linear_11_319" x1="15" y1="12" x2="19" y2="16" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EC6D43"/>
+<stop offset="1" stop-color="#FFB670"/>
+</linearGradient>
+<linearGradient id="paint4_linear_11_319" x1="15" y1="26" x2="19" y2="30" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EC6D43"/>
+<stop offset="1" stop-color="#FFB670"/>
+</linearGradient>
+<linearGradient id="paint5_linear_11_319" x1="29" y1="12" x2="33" y2="16" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EC6D43"/>
+<stop offset="1" stop-color="#FFB670"/>
+</linearGradient>
+<linearGradient id="paint6_linear_11_319" x1="29" y1="26" x2="33" y2="30" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EC6D43"/>
+<stop offset="1" stop-color="#FFB670"/>
+</linearGradient>
+<clipPath id="clip0_11_319">
+<rect width="24" height="24" fill="white" transform="translate(12 9)"/>
+</clipPath>
+</defs>
+</svg>

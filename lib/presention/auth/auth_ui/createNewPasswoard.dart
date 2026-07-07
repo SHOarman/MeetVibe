@@ -141,7 +141,7 @@ class _CreatenewpasswoardState extends State<Createnewpasswoard> {
                         Expanded(
                           child: RichText(
                             text: TextSpan(
-                              text: "I agree to A Muslim Matchmaker's ",
+                              text: "I agree to MeetVibe’s",
                               style: AppTextStyle.inter(
                                 size: 13,
                                 weight: FontWeight.w400,

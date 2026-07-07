@@ -118,7 +118,7 @@ class _ForgetpasswoardState extends State<Forgetpasswoard> {
                           const SizedBox(width: 8),
                           RichText(
                             text: TextSpan(
-                              text: "I agree to A Muslim Matchmaker's ",
+                              text: "I agree to MeetVibe’s ",
                               style: AppTextStyle.poppins(
                                 size: 13,
                                 weight: FontWeight.w500,

@@ -1,7 +1,8 @@
+import 'package:get/get.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
 class DependencyInjection {
   static void bindings() {
-    // Register initial controllers/services here
-    // e.g. Get.put(MyController());
+    Get.lazyPut(() => Authcontroller());
   }
 }

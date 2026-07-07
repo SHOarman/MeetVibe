@@ -17,7 +17,7 @@ import 'package:meetvibe/presention/auth/auth_ui/verificationSuccessful.dart';
 
 class AppPages {
 
-  static const initial = AppRoutes.onloding1;
+  static const initial = AppRoutes.uploadGovernmentID;
   static final routes = [
     GetPage(name: AppRoutes.onloding1, page: ()=>Onloding1()),
     GetPage(name: AppRoutes.onloding2, page: ()=>Onloding2()),

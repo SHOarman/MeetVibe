@@ -22,6 +22,7 @@ void main() async {
       enabled: !kReleaseMode,
       builder: (context) => const MyApp(),
     ),
+      //MyApp()
   );
 }
 

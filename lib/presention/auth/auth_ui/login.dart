@@ -120,7 +120,7 @@ class _LoginState extends State<Login> {
               ),
               const SizedBox(height: 34),
 
-              CustomButton(text: "Continue", onTap: () {}),
+              CustomButton(text: "Continue", onTap: () {Get.toNamed(AppRoutes.homeui);}),
               const SizedBox(height: 20),
 
               Row(

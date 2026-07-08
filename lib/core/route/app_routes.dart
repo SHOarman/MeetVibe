@@ -16,4 +16,19 @@ class AppRoutes {
   static const String uploadGovernmentID = '/uploadGovernmentID';
   static const String selfieVerification = '/selfieVerification';
   static const String verificationSuccessful = '/verificationSuccessful';
+
+  //================================User Interface========================================
+  static const String homeui = '/homeui';
+  static const String profile = '/profile';
+  static const String eventui = '/eventui';
+  static const String createeventui = '/createeventui';
+  static const String message = '/message';
+
+
+
+  //=======================================home============================================================
+static const String eventdetels='/eventdetels';
+static const String upcamingall='/upcamingall';
+static const String tendingcatagory='/tendingcatagory';
+static const String upcominevent='/upcominevent';
 }

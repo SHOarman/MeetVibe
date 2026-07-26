@@ -31,4 +31,13 @@ static const String eventdetels='/eventdetels';
 static const String upcamingall='/upcamingall';
 static const String tendingcatagory='/tendingcatagory';
 static const String upcominevent='/upcominevent';
+static const String notifcation= '/notifcation';
+
+//==========================================profile=========================================
+static const String editprofile='/editprofile';
+static const String security='/security';
+static const String support_help='/support_help';
+static const String change_yourpassword='/change_yourpassword';
+static const String msgInbox = '/msgInbox';
+
 }

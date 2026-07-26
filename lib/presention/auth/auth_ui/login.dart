@@ -124,7 +124,7 @@ class _LoginState extends State<Login> {
               const SizedBox(height: 20),
 
               Row(
-                mainAxisAlignment: .center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     "Don’t have an account yet?",

@@ -38,7 +38,7 @@ class Identityverification extends StatelessWidget {
                   textAlign: .center,
                   "To ensure a safe community, we need to\n verify your identity.",
                   style: AppTextStyle.inter(
-                    size: 16,
+                    size: 14,
                     weight: FontWeight.w500,
                     color: Appcolors.black,
                   ),
@@ -77,7 +77,7 @@ class Identityverification extends StatelessWidget {
                   Text(
                     "Your data is encrypted and securely stored",
                     style: AppTextStyle.poppins(
-                      size: 12,
+                      size: 10,
                       weight: FontWeight.w500,
                       color: Appcolors.black,
                     ),

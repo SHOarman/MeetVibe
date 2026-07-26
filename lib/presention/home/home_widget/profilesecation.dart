@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
+import 'package:meetvibe/core/route/app_routes.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 
 class ProfileSecation extends StatelessWidget {
@@ -51,7 +53,9 @@ class ProfileSecation extends StatelessWidget {
         ),
 
         GestureDetector(
-          onTap: () {},
+          onTap: () {
+            Get.toNamed(AppRoutes.notifcation);
+          },
           child: SvgPicture.asset(
             'assets/icon/Frame (11).svg',
             width: 28,

@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class HomeSearchBar extends StatelessWidget {
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
+  final String? hintText;
 
   const HomeSearchBar({
     super.key,
     this.controller,
     this.onChanged,
+    this.hintText,
   });
 
   @override
@@ -48,9 +50,9 @@ class HomeSearchBar extends StatelessWidget {
                 color: Color(0xFF0F0F0F),
                 fontFamily: 'Inter',
               ),
-              decoration: const InputDecoration(
-                hintText: 'Search events',
-                hintStyle: TextStyle(
+              decoration: InputDecoration(
+                hintText: hintText ?? 'Search events',
+                hintStyle: const TextStyle(
                   color: Color(0xFF7E7E7E),
                   fontSize: 16,
                   fontFamily: 'Inter',

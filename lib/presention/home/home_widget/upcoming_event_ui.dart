@@ -49,6 +49,10 @@ class UpcomingEventUi extends StatelessWidget {
       },
     ];
 
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth >= 600;
+    final int crossAxisCount = isTablet ? 3 : 2;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -71,9 +75,9 @@ class UpcomingEventUi extends StatelessWidget {
       body: GridView.builder(
         padding: const EdgeInsets.all(16.0),
         itemCount: upcomingEvents.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.67, // Aspect ratio to fit UpcomingEventCard layout perfectly
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: 0.67,
           crossAxisSpacing: 12.0,
           mainAxisSpacing: 16.0,
         ),

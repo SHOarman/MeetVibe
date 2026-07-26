@@ -361,79 +361,79 @@ class CustomBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double sw = MediaQuery.of(context).size.width;
-    final double systemNavBarHeight = MediaQuery.of(context).viewPadding.bottom;
-
     final double barHeight = 68.0;
     final double fabSize = 56.0;
+    const double bottomOffset = 8.0;
 
-    final double bottomOffset = systemNavBarHeight > 0
-        ? systemNavBarHeight
-        : 16.0;
-
-    return Container(
-      color: Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      height: barHeight + bottomOffset + (fabSize / 2),
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            bottom: bottomOffset,
-            left: 0,
-            right: 0,
-            height: barHeight,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                CustomPaint(
-                  size: Size(sw - 32, barHeight),
-                  painter: BottomNavPainter(barHeight: barHeight),
-                ),
-                SizedBox(
-                  height: barHeight,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(child: _buildNavItem(0)),
-                      Expanded(child: _buildNavItem(1)),
-                      const SizedBox(width: 68),
-                      Expanded(child: _buildNavItem(2)),
-                      Expanded(child: _buildNavItem(3)),
-                    ],
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      child: Container(
+        color: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        height: barHeight + bottomOffset + (fabSize / 2),
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              bottom: bottomOffset,
+              left: 0,
+              right: 0,
+              height: barHeight,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CustomPaint(
+                    size: Size(sw - 32, barHeight),
+                    painter: BottomNavPainter(barHeight: barHeight),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          Positioned(
-            bottom: bottomOffset + (barHeight * 0.50),
-            child: GestureDetector(
-              onTap: () => Get.toNamed(AppRoutes.createeventui),
-              child: Container(
-                height: fabSize,
-                width: fabSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFEC6D43).withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                  SizedBox(
+                    height: barHeight,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(child: _buildNavItem(0)),
+                        Expanded(child: _buildNavItem(1)),
+                        const SizedBox(width: 68),
+                        Expanded(child: _buildNavItem(2)),
+                        Expanded(child: _buildNavItem(3)),
+                      ],
                     ),
-                  ],
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFFFB670), Color(0xFFEC6D43)],
                   ),
-                ),
-                child: const Icon(Icons.add, color: Colors.white, size: 28),
+                ],
               ),
             ),
-          ),
-        ],
+
+            Positioned(
+              bottom: bottomOffset + (barHeight * 0.50),
+              child: GestureDetector(
+                onTap: () => Get.toNamed(AppRoutes.createeventui),
+                child: Container(
+                  height: fabSize,
+                  width: fabSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEC6D43).withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFFFFB670), Color(0xFFEC6D43)],
+                    ),
+                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

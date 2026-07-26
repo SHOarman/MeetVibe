@@ -86,6 +86,7 @@ class HomeUi extends StatelessWidget {
                 child: Row(
                   children: [
                     NearbyEventCard(
+                      width: 176.0,
                       title: 'Live Music Festival',
                       categoryName: 'Music',
                       categoryColor: const Color(0xFF6B46C1),
@@ -97,6 +98,7 @@ class HomeUi extends StatelessWidget {
                     ),
                     const SizedBox(width: 14),
                     NearbyEventCard(
+                      width: 176.0,
                       title: 'Weekend Hike & Camping',
                       categoryName: 'Adventure',
                       categoryColor: const Color(0xFFF97316),
@@ -181,6 +183,7 @@ class HomeUi extends StatelessWidget {
                 child: Row(
                   children: [
                     UpcomingEventCard(
+                      width: 176.0,
                       day: '05',
                       month: 'Jun',
                       title: 'Teach Talk',
@@ -192,6 +195,7 @@ class HomeUi extends StatelessWidget {
                     ),
                     const SizedBox(width: 14),
                     UpcomingEventCard(
+                      width: 176.0,
                       day: '08',
                       month: 'Jun',
                       title: 'Morning Yoga Session',

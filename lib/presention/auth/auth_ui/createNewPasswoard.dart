@@ -5,6 +5,7 @@ import 'package:meetvibe/global_widget/custombutton.dart';
 import 'package:meetvibe/presention/auth/auth_widget/customtextfild.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/unity/appcolors/appcolors.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
 class Createnewpasswoard extends StatefulWidget {
   const Createnewpasswoard({super.key});
@@ -28,6 +29,8 @@ class _CreatenewpasswoardState extends State<Createnewpasswoard> {
 
   @override
   Widget build(BuildContext context) {
+    final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -166,9 +169,12 @@ class _CreatenewpasswoardState extends State<Createnewpasswoard> {
                   const SizedBox(height: 32),
                   
                   // Action Button
-                  CustomButton(
-                    text: "Forget Password",
-                    onTap: () {
+                  Obx(() => CustomButton(
+                    text: "Reset Password",
+                    isLoading: authController.isLoading.value,
+                    onTap: () async {
+                      if (authController.isLoading.value) return;
+
                       if (_formKey.currentState?.validate() ?? false) {
                         if (!_agreeToPolicy) {
                           Get.snackbar(
@@ -181,10 +187,23 @@ class _CreatenewpasswoardState extends State<Createnewpasswoard> {
                           return;
                         }
 
-                        Get.toNamed(AppRoutes.verified);
+                        if (authController.registeredEmail.value.isEmpty || authController.resetOtp.value.isEmpty) {
+                           Get.snackbar('Error', 'Missing required user session data. Please start forgot password flow over.');
+                           return;
+                        }
+
+                        final success = await authController.resetPassword(
+                          email: authController.registeredEmail.value,
+                          otp: authController.resetOtp.value,
+                          password: _newPasswordController.text,
+                        );
+
+                        if (success) {
+                          Get.toNamed(AppRoutes.login);
+                        }
                       }
                     },
-                  ),
+                  )),
                   const SizedBox(height: 32),
                   
 

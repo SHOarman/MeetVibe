@@ -5,6 +5,7 @@ import 'package:meetvibe/core/route/app_routes.dart';
 import 'package:meetvibe/global_widget/custombutton.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/unity/appcolors/appcolors.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
 class Verifyemail extends StatefulWidget {
   const Verifyemail({super.key});
@@ -41,6 +42,8 @@ class _VerifyemailState extends State<Verifyemail> {
 
   @override
   Widget build(BuildContext context) {
+    final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -81,7 +84,7 @@ class _VerifyemailState extends State<Verifyemail> {
                         text: "We emailed you a six-digit code to ",
                       ),
                       TextSpan(
-                        text: "name@company.com",
+                        text: Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>().registeredEmail.value : "your email",
                         style: AppTextStyle.inter(
                           size: 14,
                           weight: FontWeight.w700,
@@ -156,15 +159,65 @@ class _VerifyemailState extends State<Verifyemail> {
                 ),
                 const SizedBox(height: 32),
 
-                CustomButton(
+                Obx(() => CustomButton(
                   text: "Verify",
-                  onTap: () {
+                  isLoading: authController.isLoading.value,
+                  onTap: () async {
                     String otp = _controllers.map((c) => c.text).join();
-                    print("Verification OTP: $otp");
+                    if (otp.length < 6) {
+                      Get.snackbar('Error', 'Please enter a valid 6-digit OTP code.');
+                      return;
+                    }
+                    
+                    final email = authController.registeredEmail.value;
+                    
+                    if (email.isEmpty) {
+                      Get.snackbar('Error', 'No email found to verify.');
+                      return;
+                    }
+                    
+                    final isForgotPassword = Get.arguments != null && Get.arguments['isForgotPassword'] == true;
+                    
+                    if (isForgotPassword) {
+                      authController.resetOtp.value = otp;
+                      Get.toNamed(AppRoutes.createNewPassword);
+                      return;
+                    }
+                    
+                    final success = await authController.verifyOtp(email: email, otp: otp);
 
-                    Get.toNamed(AppRoutes.createNewPassword);
-
+                    if (success) {
+                      // Move to the next step, e.g., identity verification or success 
+                      // Depending on if this is forgot password or registration:
+                      Get.toNamed(AppRoutes.identityVerification);
+                    }
                   },
+                )),
+                const SizedBox(height: 20),
+                GestureDetector(
+                  onTap: () {
+                    final email = authController.registeredEmail.value;
+                    if (email.isNotEmpty) {
+                      final isForgotPassword = Get.arguments != null && Get.arguments['isForgotPassword'] == true;
+                      if (isForgotPassword) {
+                        authController.forgotPassword(email: email);
+                      } else {
+                        authController.resendOtp(email: email);
+                      }
+                    } else {
+                      Get.snackbar('Error', 'No email found to resend OTP.');
+                    }
+                  },
+                  child: Center(
+                    child: Text(
+                      "Resend Code",
+                      style: AppTextStyle.poppins(
+                        size: 14,
+                        weight: FontWeight.w600,
+                        color: Appcolors.pramary,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
               ],

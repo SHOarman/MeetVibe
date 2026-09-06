@@ -5,19 +5,15 @@ import 'package:meetvibe/global_widget/custombutton.dart';
 import 'package:meetvibe/presention/auth/auth_widget/customtextfild.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/unity/appcolors/appcolors.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
-class Login extends StatefulWidget {
+class Login extends StatelessWidget {
   const Login({super.key});
 
   @override
-  State<Login> createState() => _LoginState();
-}
-
-class _LoginState extends State<Login> {
-  bool _rememberMe = false;
-
-  @override
   Widget build(BuildContext context) {
+    final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
@@ -31,7 +27,7 @@ class _LoginState extends State<Login> {
               const SizedBox(height: 10),
               Center(
                 child: Text(
-                  "Log in ",
+                  "Log in",
                   style: AppTextStyle.poppins(
                     size: 18,
                     weight: FontWeight.w600,
@@ -41,14 +37,16 @@ class _LoginState extends State<Login> {
               ),
               const SizedBox(height: 20),
 
-              const CustomTextfild(
+              CustomTextfild(
+                controller: authController.loginEmailController,
                 keyboardType: TextInputType.emailAddress,
                 labelText: "Email",
                 hintText: "name@example.com",
               ),
               const SizedBox(height: 20),
 
-              const CustomTextfild(
+              CustomTextfild(
+                controller: authController.loginPasswordController,
                 labelText: "Password",
                 hintText: "••••••••••",
                 isPassword: true,
@@ -60,36 +58,34 @@ class _LoginState extends State<Login> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      setState(() {
-                        _rememberMe = !_rememberMe;
-                      });
+                      authController.rememberMe.value = !authController.rememberMe.value;
                     },
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
+                        Obx(() => Container(
                           width: 20,
                           height: 20,
                           decoration: BoxDecoration(
-                            color: _rememberMe
+                            color: authController.rememberMe.value
                                 ? Appcolors.pramary
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: _rememberMe
+                              color: authController.rememberMe.value
                                   ? Appcolors.pramary
                                   : const Color(0xFFD1D5DB),
                               width: 1.5,
                             ),
                           ),
-                          child: _rememberMe
+                          child: authController.rememberMe.value
                               ? const Icon(
                                   Icons.check,
                                   size: 14,
                                   color: Colors.white,
                                 )
                               : null,
-                        ),
+                        )),
                         const SizedBox(width: 8),
                         Text(
                           "Remember me",
@@ -120,7 +116,27 @@ class _LoginState extends State<Login> {
               ),
               const SizedBox(height: 34),
 
-              CustomButton(text: "Continue", onTap: () {Get.toNamed(AppRoutes.homeui);}),
+              Obx(() => CustomButton(
+                text: "Continue", 
+                isLoading: authController.isLoading.value,
+                onTap: () async {
+                  if (authController.isLoading.value) return;
+
+                  if (authController.loginEmailController.text.isEmpty || 
+                      authController.loginPasswordController.text.isEmpty) {
+                    Get.snackbar('Error', 'Please fill all required fields');
+                    return;
+                  }
+                  
+                  final success = await authController.login(
+                    email: authController.loginEmailController.text,
+                    password: authController.loginPasswordController.text,
+                  );
+                  if (success) {
+                    Get.toNamed(AppRoutes.homeui);
+                  }
+                }
+              )),
               const SizedBox(height: 20),
 
               Row(
@@ -134,7 +150,7 @@ class _LoginState extends State<Login> {
                       color: Appcolors.black,
                     ),
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   GestureDetector(
                     onTap: () {
                       Get.toNamed(AppRoutes.createAccount);

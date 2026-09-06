@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:meetvibe/global_widget/custombutton.dart';
 import 'package:meetvibe/presention/auth/auth_widget/customtextfild.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/unity/appcolors/appcolors.dart';
+import 'package:meetvibe/core/route/app_routes.dart';
+import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart';
 
 class Editprofile extends StatefulWidget {
   const Editprofile({super.key});
@@ -15,10 +19,54 @@ class Editprofile extends StatefulWidget {
 }
 
 class _EditprofileState extends State<Editprofile> {
-  final TextEditingController _fullNameController = TextEditingController(text: "Mugdho");
-  final TextEditingController _emailController = TextEditingController(text: "kader@gmail.com");
+  late TextEditingController _fullNameController;
+  late TextEditingController _emailController;
   final TextEditingController _dobController = TextEditingController(text: "12/11/2001");
   String? _selectedGender = "Male";
+  File? _pickedImage;
+  final ProfileController profileController = Get.isRegistered<ProfileController>() ? Get.find<ProfileController>() : Get.put(ProfileController());
+  late Worker _nameWorker;
+  late Worker _emailWorker;
+
+  @override
+  void initState() {
+    super.initState();
+    _fullNameController = TextEditingController(text: profileController.name.value);
+    _emailController = TextEditingController(text: profileController.email.value);
+
+    // Ensure controllers update if API fetches data *after* this page loads
+    _nameWorker = ever(profileController.name, (String val) {
+      if (_fullNameController.text.isEmpty && val.isNotEmpty) {
+        _fullNameController.text = val;
+      }
+    });
+
+    _emailWorker = ever(profileController.email, (String val) {
+      if (_emailController.text.isEmpty && val.isNotEmpty) {
+        _emailController.text = val;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameWorker.dispose();
+    _emailWorker.dispose();
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _dobController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _pickedImage = File(pickedFile.path);
+      });
+    }
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -33,14 +81,6 @@ class _EditprofileState extends State<Editprofile> {
             "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _emailController.dispose();
-    _dobController.dispose();
-    super.dispose();
   }
 
   @override
@@ -83,79 +123,140 @@ class _EditprofileState extends State<Editprofile> {
 
               const SizedBox(height: 30),
 
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Image.asset(
-                    "assets/image/59039 1 (1).png",
-                    height: 120,
-                    width: 120,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 120,
-                      height: 120,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.person, size: 50),
-                    ),
-                  ),
-                  Positioned(
-                    left: 120,
-                    top: 30,
-                    child: Text(
-                      "Mugdho",
-                      style: AppTextStyle.poppins(
-                        size: 24,
-                        weight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 40,
-                    left: 260,
-                    child: SvgPicture.asset(
-                      "assets/icon/Vector (4).svg",
-                      height: 20,
-                      width: 20,
-                    ),
-                  ),
+              Obx(() {
+                 if (profileController.isLoading.value) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                 }
 
-                  Positioned(
-                    top: 65,
-                    left: 130,
-                    child: Text(
-                      "@mugdho_23",
-                      style: AppTextStyle.poppins(
-                        size: 14,
-                        weight: FontWeight.w400,
-                        color: const Color(0xff323232),
+                 final imageUrl = profileController.image.value;
+                 final localImage = profileController.localImage.value;
+                 final isVerified = profileController.isVerified.value;
+                 final name = profileController.name.value.isEmpty ? "Name" : profileController.name.value;
+                 final username = profileController.username.value.isEmpty ? "" : profileController.username.value;
+
+                 return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                            ),
+                            clipBehavior: Clip.hardEdge,
+                            child: _pickedImage != null 
+                              ? Image.file(
+                                  _pickedImage!,
+                                  height: 100,
+                                  width: 100,
+                                  fit: BoxFit.cover,
+                                )
+                              : localImage.isNotEmpty
+                                ? Image.file(
+                                    File(localImage),
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
+                                  )
+                                : imageUrl != null && imageUrl.isNotEmpty
+                                  ? Image.network(
+                                    imageUrl,
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(Icons.person, size: 50),
+                                    ),
+                                  )
+                                : Image.asset(
+                                    "assets/image/59039 1 (1).png",
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(Icons.person, size: 50),
+                                    ),
+                                  ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              height: 32,
+                              width: 32,
+                              decoration: BoxDecoration(
+                                color: Appcolors.pramary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: 90,
-                    left: 130,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SvgPicture.asset(
-                          "assets/icon/Vector (5).svg",
-                          height: 12,
-                          width: 12,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          "Dhaka, Bangladesh",
-                          style: AppTextStyle.poppins(
-                            size: 13,
-                            weight: FontWeight.w400,
-                            color: const Color(0xff7E7E7E),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  name,
+                                  style: AppTextStyle.poppins(
+                                    size: 24,
+                                    weight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isVerified) ...[
+                                const SizedBox(width: 4),
+                                SvgPicture.asset(
+                                  "assets/icon/Vector (4).svg",
+                                  height: 20,
+                                  width: 20,
+                                ),
+                              ]
+                            ],
                           ),
-                        ),
-                      ],
+                          if (username.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              username,
+                              style: AppTextStyle.poppins(
+                                size: 14,
+                                weight: FontWeight.w400,
+                                color: const Color(0xff323232),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              }),
 
               //=======================================Personal Information===========================
               const SizedBox(height: 40),
@@ -184,6 +285,7 @@ class _EditprofileState extends State<Editprofile> {
                 labelText: "Email Address",
                 hintText: "Enter your email address",
                 keyboardType: TextInputType.emailAddress,
+                readOnly: true, // Email should not be changed
               ),
 
               const SizedBox(height: 20),
@@ -287,12 +389,24 @@ class _EditprofileState extends State<Editprofile> {
 
               const SizedBox(height: 40),
 
-              CustomButton(
+              Obx(() => CustomButton(
                 text: "Save",
-                onTap: () {
-                  Get.snackbar('Success', 'Profile updated successfully!');
+                isLoading: profileController.isLoading.value,
+                onTap: () async {
+                  if (profileController.isLoading.value) return;
+
+                  final success = await profileController.updateProfile(
+                    _fullNameController.text,
+                    null, // image upload not implemented in API
+                    localImagePath: _pickedImage?.path,
+                  );
+
+                  if (success) {
+                    Get.snackbar('Success', 'Profile updated successfully!', backgroundColor: Colors.green, colorText: Colors.white);
+                    Get.offAllNamed(AppRoutes.homeui);
+                  }
                 },
-              ),
+              )),
 
               const SizedBox(height: 40),
             ],

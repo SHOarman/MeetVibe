@@ -5,6 +5,7 @@ import 'package:meetvibe/global_widget/custombutton.dart';
 import 'package:meetvibe/presention/auth/auth_widget/customtextfild.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/unity/appcolors/appcolors.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
 class Forgetpasswoard extends StatefulWidget {
   const Forgetpasswoard({super.key});
@@ -15,13 +16,7 @@ class Forgetpasswoard extends StatefulWidget {
 
 class _ForgetpasswoardState extends State<Forgetpasswoard> {
   bool _agreeToPolicy = false;
-  final _emailController = TextEditingController();
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
+  final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +72,7 @@ class _ForgetpasswoardState extends State<Forgetpasswoard> {
                 ),
                 const SizedBox(height: 32),
                 CustomTextfild(
-                  controller: _emailController,
+                  controller: authController.forgotEmailController,
                   labelText: "Email",
                   hintText: "Enter your email",
                   keyboardType: TextInputType.emailAddress,
@@ -146,14 +141,31 @@ class _ForgetpasswoardState extends State<Forgetpasswoard> {
                 // Action Buttons Row
                 Row(
                   children: [
-                    CustomButton(
+                    Obx(() => CustomButton(
                       text: "Forget password",
                       width: 170,
                       height: 46,
-                      onTap: () {
-                       Get.toNamed(AppRoutes.verifyEmail);
+                      isLoading: authController.isLoading.value,
+                      onTap: () async {
+                        if (authController.isLoading.value) return;
+                        if (!_agreeToPolicy) {
+                          Get.snackbar('Error', 'Please agree to the Privacy Policy');
+                          return;
+                        }
+                        if (authController.forgotEmailController.text.isEmpty) {
+                          Get.snackbar('Error', 'Please enter your email');
+                          return;
+                        }
+
+                        final success = await authController.forgotPassword(
+                          email: authController.forgotEmailController.text
+                        );
+
+                        if (success) {
+                          Get.toNamed(AppRoutes.verifyEmail, arguments: {'isForgotPassword': true});
+                        }
                       },
-                    ),
+                    )),
                     const SizedBox(width: 20),
                     GestureDetector(
                       onTap: () => Get.back(),

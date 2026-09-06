@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:meetvibe/core/dependency_injection/injecation.dart';
 import 'package:meetvibe/core/route/app_pages.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:meetvibe/core/route/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,17 +19,21 @@ void main() async {
 
   DependencyInjection.bindings();
 
+  final prefs = await SharedPreferences.getInstance();
+  final hasToken = prefs.getString('accessToken') != null;
+
   runApp(
     DevicePreview(
       enabled: !kReleaseMode,
-      builder: (context) => const MyApp(),
+      builder: (context) => MyApp(hasToken: hasToken),
     ),
-      //MyApp()
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool hasToken;
+  
+  const MyApp({super.key, this.hasToken = false});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +50,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      initialRoute: AppPages.initial,
+      initialRoute: hasToken ? AppRoutes.homeui : AppPages.initial,
       getPages: AppPages.routes,
     );
   }

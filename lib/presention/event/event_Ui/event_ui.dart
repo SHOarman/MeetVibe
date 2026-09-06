@@ -26,7 +26,7 @@ class EventUi extends StatelessWidget {
               SizedBox(height: 60),
 
               Row(
-                mainAxisAlignment: .spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     "Events",

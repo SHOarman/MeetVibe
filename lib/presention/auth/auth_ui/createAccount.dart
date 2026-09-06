@@ -5,30 +5,15 @@ import 'package:meetvibe/global_widget/custombutton.dart';
 import 'package:meetvibe/presention/auth/auth_widget/customtextfild.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/unity/appcolors/appcolors.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
-class Createaccount extends StatefulWidget {
+class Createaccount extends StatelessWidget {
   const Createaccount({super.key});
 
   @override
-  State<Createaccount> createState() => _CreateaccountState();
-}
-
-class _CreateaccountState extends State<Createaccount> {
-  bool _acceptTerms = false;
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final authController = Get.put(Authcontroller());
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -58,23 +43,26 @@ class _CreateaccountState extends State<Createaccount> {
                 ),
                 const SizedBox(height: 24),
 
-                // Name Field
-                const CustomTextfild(
+                // Email Field
+                CustomTextfild(
+                  controller: authController.emailController,
                   labelText: "Email",
                   hintText: "Enter your email",
-                  keyboardType: TextInputType.name,
-                ),
-                const SizedBox(height: 16),
-
-                // Email Field
-                const CustomTextfild(
-                  labelText: "Full name",
-                  hintText: "Enter your name",
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
 
-                const CustomTextfild(
+                // Name Field
+                CustomTextfild(
+                  controller: authController.nameController,
+                  labelText: "Full name",
+                  hintText: "Enter your name",
+                  keyboardType: TextInputType.name,
+                ),
+                const SizedBox(height: 16),
+
+                CustomTextfild(
+                  controller: authController.passwordController,
                   labelText: "Password",
                   hintText: "••••••••••",
                   isPassword: true,
@@ -85,36 +73,34 @@ class _CreateaccountState extends State<Createaccount> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        setState(() {
-                          _acceptTerms = !_acceptTerms;
-                        });
+                        authController.acceptTerms.value = !authController.acceptTerms.value;
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
+                          Obx(() => Container(
                             width: 20,
                             height: 20,
                             decoration: BoxDecoration(
-                              color: _acceptTerms
+                              color: authController.acceptTerms.value
                                   ? Appcolors.pramary
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: _acceptTerms
+                                color: authController.acceptTerms.value
                                     ? Appcolors.pramary
                                     : const Color(0xFFD1D5DB),
                                 width: 1.5,
                               ),
                             ),
-                            child: _acceptTerms
+                            child: authController.acceptTerms.value
                                 ? const Icon(
                                     Icons.check,
                                     size: 14,
                                     color: Colors.white,
                                   )
                                 : null,
-                          ),
+                          )),
                           const SizedBox(width: 8),
                           RichText(
                             text: TextSpan(
@@ -143,7 +129,34 @@ class _CreateaccountState extends State<Createaccount> {
                 ),
                 const SizedBox(height: 34),
 
-                CustomButton(text: "Continue", onTap: () {}),
+                Obx(() => CustomButton(
+                  text: "Continue",
+                  isLoading: authController.isLoading.value,
+                  onTap: () async {
+                    if (authController.isLoading.value) return;
+
+                    if (!authController.acceptTerms.value) {
+                      Get.snackbar('Error', 'Please accept Terms and Conditions');
+                      return;
+                    }
+                    if (authController.emailController.text.isEmpty || 
+                        authController.nameController.text.isEmpty || 
+                        authController.passwordController.text.isEmpty) {
+                      Get.snackbar('Error', 'Please fill all required fields');
+                      return;
+                    }
+                    
+                    final success = await authController.register(
+                      email: authController.emailController.text,
+                      name: authController.nameController.text,
+                      password: authController.passwordController.text,
+                    );
+                    if (success) {
+                      // Move to the verify email OTP page
+                      Get.toNamed(AppRoutes.verifyEmail);
+                    }
+                  }
+                )),
                 const SizedBox(height: 20),
 
                 Row(

@@ -6,20 +6,25 @@ import 'package:meetvibe/global_widget/custombutton.dart';
 import 'package:meetvibe/presention/auth/auth_widget/verificationcard.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/unity/appcolors/appcolors.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Identityverification extends StatelessWidget {
   const Identityverification({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Ensuring authController is available
+    final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
-            mainAxisAlignment: .start,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              SizedBox(height: 80),
+              const SizedBox(height: 80),
               Center(
                 child: Text(
                   "Identity Verification",
@@ -31,12 +36,12 @@ class Identityverification extends StatelessWidget {
                 ),
               ),
 
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               Center(
                 child: Text(
-                  textAlign: .center,
                   "To ensure a safe community, we need to\n verify your identity.",
+                  textAlign: TextAlign.center,
                   style: AppTextStyle.inter(
                     size: 14,
                     weight: FontWeight.w500,
@@ -45,7 +50,7 @@ class Identityverification extends StatelessWidget {
                 ),
               ),
 
-              SizedBox(height: 50),
+              const SizedBox(height: 50),
 
               VerificationCard(
                 title: 'Government ID',
@@ -53,14 +58,14 @@ class Identityverification extends StatelessWidget {
                 svgPath: 'assets/icon/Frame (7).svg',
                 onTap: () {},
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               VerificationCard(
                 title: 'Selfie Verification',
                 subtitle: 'Take a clear selfie',
                 svgPath: 'assets/icon/Frame (8).svg',
                 onTap: () {},
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               VerificationCard(
                 title: 'Age Verification',
                 subtitle: 'You must be 18+ to continue',
@@ -68,10 +73,9 @@ class Identityverification extends StatelessWidget {
                 onTap: () {},
               ),
 
-              SizedBox(height: 100),
+              const SizedBox(height: 100),
               Row(
-                mainAxisAlignment: .center,
-
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SvgPicture.asset("assets/icon/Frame (10).svg"),
                   Text(
@@ -84,11 +88,26 @@ class Identityverification extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
 
-              CustomButton(text: "Continue", onTap: () {
-                Get.toNamed(AppRoutes.uploadGovernmentID);
-              }),
+              Obx(() => CustomButton(
+                text: "Continue", 
+                isLoading: authController.isLoading.value,
+                onTap: () async {
+                  final urlString = await authController.verifyIdentity();
+                  if (urlString != null) {
+                    final uri = Uri.parse(urlString);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      // After launching Stripe verification, you can route the user 
+                      // or wait for them to come back and verify webhook 
+                    } else {
+                      Get.snackbar('Error', 'Could not open URL: $urlString');
+                    }
+                  }
+                }
+              )),
+              const SizedBox(height: 20),
             ],
           ),
         ),

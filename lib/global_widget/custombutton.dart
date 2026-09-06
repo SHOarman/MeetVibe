@@ -10,6 +10,7 @@ class CustomButton extends StatefulWidget {
   final double borderRadius;
   final Gradient? gradient;
   final TextStyle? textStyle;
+  final bool isLoading;
 
   const CustomButton({
     super.key,
@@ -20,6 +21,7 @@ class CustomButton extends StatefulWidget {
     this.borderRadius = 12.0,
     this.gradient,
     this.textStyle,
+    this.isLoading = false,
   });
 
   @override
@@ -55,12 +57,12 @@ class _CustomButtonState extends State<CustomButton> with SingleTickerProviderSt
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTapDown: (_) => _controller.forward(),
-        onTapUp: (_) {
+        onTapDown: widget.isLoading ? null : (_) => _controller.forward(),
+        onTapUp: widget.isLoading ? null : (_) {
           _controller.reverse();
           widget.onTap();
         },
-        onTapCancel: () => _controller.reverse(),
+        onTapCancel: widget.isLoading ? null : () => _controller.reverse(),
         child: ScaleTransition(
           scale: _scaleAnimation,
           child: Container(
@@ -78,15 +80,24 @@ class _CustomButtonState extends State<CustomButton> with SingleTickerProviderSt
               ],
             ),
             child: Center(
-              child: Text(
-                widget.text,
-                style: widget.textStyle ??
-                    GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+              child: widget.isLoading
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Text(
+                      widget.text,
+                      style: widget.textStyle ??
+                          GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
-              ),
             ),
           ),
         ),

@@ -4,19 +4,20 @@ import 'package:meetvibe/presention/createevent/create_event_widget/venue_online
 import 'package:meetvibe/presention/createevent/create_event_widget/mapcreate.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 
-class LocationStep extends StatefulWidget {
+import 'package:get/get.dart';
+import 'package:meetvibe/presention/createevent/create_event_controller/create_controller.dart';
+
+class LocationStep extends StatelessWidget {
   const LocationStep({super.key});
 
   @override
-  State<LocationStep> createState() => _LocationStepState();
-}
-
-class _LocationStepState extends State<LocationStep> {
-  bool _isVenueSelected = true;
-
-  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    final createController = Get.isRegistered<CreateController>() ? Get.find<CreateController>() : Get.put(CreateController());
+    
+    return Obx(() {
+      final isOffline = createController.venueType.value == 'OFFLINE';
+      
+      return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: SizedBox(
         width: double.infinity,
@@ -43,37 +44,59 @@ class _LocationStepState extends State<LocationStep> {
             const SizedBox(height: 24),
 
             VenueOnlineOrOfflineSelector(
-              isVenueSelected: _isVenueSelected,
+              isVenueSelected: isOffline,
               onChanged: (value) {
-                setState(() {
-                  _isVenueSelected = value;
-                });
+                createController.venueType.value = value ? 'OFFLINE' : 'ONLINE';
               },
             ),
-
             const SizedBox(height: 24),
-            CustomTextfild(labelText: "Venue Name", hintText: "e.g. Stadium"),
 
-            SizedBox(height: 10),
-            CustomTextfild(
-              labelText: "Full Address",
-              hintText: "ex. Road 27, Dhanmondi, Dhaka 1209, Bangladesh",
-            ),
-
-            SizedBox(height: 30),
-            Text(
-              "Show on Map",
-              style: AppTextStyle.poppins(
-                size: 15,
-                weight: FontWeight.w800,
-                color: Color(0xff0C0A09),
+            if (isOffline) ...[
+              CustomTextfild(
+                controller: createController.venueNameController,
+                labelText: "Venue Name",
+                hintText: "e.g. Stadium"
               ),
-            ),
-            SizedBox(height: 10,),
-            const MapCreateWidget(),
+              const SizedBox(height: 10),
+              CustomTextfild(
+                controller: createController.addressController,
+                labelText: "Full Address",
+                hintText: "ex. Road 27, Dhanmondi, Dhaka 1209, Bangladesh",
+              ),
+              const SizedBox(height: 30),
+              Text(
+                "Show on Map",
+                style: AppTextStyle.poppins(
+                  size: 15,
+                  weight: FontWeight.w800,
+                  color: const Color(0xff0C0A09),
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  // Map Picker Simulator
+                  createController.mapLat.value = 23.7937;
+                  createController.mapLng.value = 90.4066;
+                  Get.snackbar(
+                    'Location Picked', 
+                    'Simulated picking location: Lat: 23.7937, Lng: 90.4066',
+                    backgroundColor: Colors.white,
+                  );
+                },
+                child: const MapCreateWidget(),
+              ),
+            ] else ...[
+              CustomTextfild(
+                controller: createController.onlineLinkController,
+                labelText: "Online Meeting Link",
+                hintText: "e.g. https://zoom.us/j/123456789 (Zoom/Google Meet)",
+              ),
+            ],
           ],
         ),
       ),
     );
+    });
   }
 }

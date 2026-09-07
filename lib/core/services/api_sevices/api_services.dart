@@ -1,7 +1,7 @@
 class Apiservices {
   Apiservices._();
 
-  static const String baseUrl = "https://guam-familiar-href-possibility.trycloudflare.com/api/v1";
+  static const String baseUrl = "https://ocean-article-hair-july.trycloudflare.com/api/v1";
 
   //========================================================Chat=======================================
   static const String chatConversations = "$baseUrl/chat/conversations";
@@ -40,6 +40,7 @@ class Apiservices {
   static const String eventStep3 = "$baseUrl/event/step3";
   static const String eventStep4 = "$baseUrl/event/step4";
   static String eventPublish(String id) => "$baseUrl/event/publish/$id";
+  static const String eventCategories = "$baseUrl/event/categories";
   static const String eventList = "$baseUrl/event";
   static const String eventMine = "$baseUrl/event/mine";
   static String eventDetails(String id) => "$baseUrl/event/$id";
@@ -72,4 +73,6 @@ class Apiservices {
   static const String userStripeConnectOnboard = "$baseUrl/user/stripe-connect/onboard";
   static const String userStripeConnectStatus = "$baseUrl/user/stripe-connect/status";
   static const String userAccountDelete = "$baseUrl/user/account";
+  static const String get_category="$baseUrl/event/categories";
+  
 }

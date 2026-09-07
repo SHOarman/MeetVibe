@@ -97,12 +97,10 @@ class Identityverification extends StatelessWidget {
                   final urlString = await authController.verifyIdentity();
                   if (urlString != null) {
                     final uri = Uri.parse(urlString);
-                    if (await canLaunchUrl(uri)) {
+                    try {
                       await launchUrl(uri, mode: LaunchMode.externalApplication);
-                      // After launching Stripe verification, you can route the user 
-                      // or wait for them to come back and verify webhook 
-                    } else {
-                      Get.snackbar('Error', 'Could not open URL: $urlString');
+                    } catch (e) {
+                      Get.snackbar('Error', 'Could not open URL: $e');
                     }
                   }
                 }

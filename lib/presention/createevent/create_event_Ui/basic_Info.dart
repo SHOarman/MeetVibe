@@ -2,8 +2,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:meetvibe/presention/auth/auth_widget/customtextfild.dart';
-import 'package:meetvibe/presention/home/home_widget/tendingcatory.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:get/get.dart';
+import 'package:meetvibe/presention/createevent/create_event_controller/create_controller.dart';
 
 class BasicInfoStep extends StatefulWidget {
   const BasicInfoStep({super.key});
@@ -18,6 +19,8 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
 
   @override
   Widget build(BuildContext context) {
+    final createController = Get.isRegistered<CreateController>() ? Get.find<CreateController>() : Get.put(CreateController());
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -42,60 +45,78 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
             ),
           ),
           const SizedBox(height: 18),
-          CustomPaint(
-            painter: DashedGradientPainter(
-              gradient: ui.Gradient.linear(
-                Offset(0, 0),
-                Offset(300, 150),
-                const [Color(0xFFEC6D43), Color(0xFFFFB670)],
-              ),
-              strokeWidth: 5.0,
-              radius: 12,
-              dashPattern: const [6, 4],
-            ),
-            child: Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F8F8),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ShaderMask(
-                    shaderCallback: (Rect bounds) {
-                      return const LinearGradient(
-                        colors: [Color(0xFFFFB670), Color(0xFFEC6D43)],
-                      ).createShader(bounds);
-                    },
-                    child: const Icon(
-                      Icons.upload_outlined,
-                      size: 32,
-                      color: Colors.white,
-                    ),
+          GestureDetector(
+            onTap: createController.pickCoverImage,
+            child: Obx(() {
+              if (createController.coverImage.value != null) {
+                 return Container(
+                   height: 150,
+                   width: double.infinity,
+                   decoration: BoxDecoration(
+                     borderRadius: BorderRadius.circular(12),
+                     image: DecorationImage(
+                       image: FileImage(createController.coverImage.value!), 
+                       fit: BoxFit.cover,
+                     ),
+                   ),
+                 );
+              }
+              return CustomPaint(
+                painter: DashedGradientPainter(
+                  gradient: ui.Gradient.linear(
+                    Offset(0, 0),
+                    Offset(300, 150),
+                    const [Color(0xFFEC6D43), Color(0xFFFFB670)],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    "Add Event cover",
-                    style: AppTextStyle.inter(
-                      size: 14,
-                      weight: FontWeight.w500,
-                      color: const Color(0xFF2A2A2A),
-                    ),
+                  strokeWidth: 5.0,
+                  radius: 12,
+                  dashPattern: const [6, 4],
+                ),
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F8F8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Max size 10MB",
-                    style: AppTextStyle.inter(
-                      size: 11,
-                      weight: FontWeight.normal,
-                      color: Colors.grey[500],
-                    ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (Rect bounds) {
+                          return const LinearGradient(
+                            colors: [Color(0xFFFFB670), Color(0xFFEC6D43)],
+                          ).createShader(bounds);
+                        },
+                        child: const Icon(
+                          Icons.upload_outlined,
+                          size: 32,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Add Event cover",
+                        style: AppTextStyle.inter(
+                          size: 14,
+                          weight: FontWeight.w500,
+                          color: const Color(0xFF2A2A2A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Max size 10MB",
+                        style: AppTextStyle.inter(
+                          size: 11,
+                          weight: FontWeight.normal,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            }),
           ),
 
           // Event Title Section
@@ -109,11 +130,11 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
             ),
           ),
           const SizedBox(height: 8),
-          const CustomTextfild(
+          CustomTextfild(
             hintText: "Enter event title",
+            controller: createController.titleController,
           ),
 
-          // Event Category Section
           const SizedBox(height: 30),
           Text(
             "Event Category",
@@ -124,7 +145,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
             ),
           ),
           const SizedBox(height: 8),
-          const TrendingCategoryRow(),
+          DynamicCategoryRow(controller: createController),
 
           // Event Description Section
           const SizedBox(height: 30),
@@ -159,79 +180,93 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      value: _selectedEventType,
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFD1D5DB),
-                            width: 1,
+                    Obx(() {
+                      final items = createController.dynamicEventTypes.isEmpty
+                          ? ['In-Person', 'Online', 'Webinar', 'Other']
+                          : createController.dynamicEventTypes.toList();
+                      
+                      String? dropdownValue = _selectedEventType;
+                      if (!items.contains(dropdownValue) && items.isNotEmpty) {
+                        dropdownValue = null;
+                      }
+
+                      return DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        value: dropdownValue,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFD1D5DB),
-                            width: 1,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFEC6D43),
-                            width: 1.5,
-                          ),
-                        ),
-                        fillColor: const Color(0xFFF9FAFB),
-                        filled: false,
-                      ),
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Color(0xFF9CA3AF),
-                      ),
-                      hint: Text(
-                        "Select event type",
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF9CA3AF),
-                        ),
-                      ),
-                      items: ['In-Person', 'Online', 'Webinar', 'Other']
-                          .map((String type) {
-                        return DropdownMenuItem<String>(
-                          value: type,
-                          child: Text(
-                            type,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              color: const Color(0xFF0C0A09),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFD1D5DB),
+                              width: 1,
                             ),
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedEventType = newValue;
-                        });
-                      },
-                    ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFD1D5DB),
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFEC6D43),
+                              width: 1.5,
+                            ),
+                          ),
+                          fillColor: const Color(0xFFF9FAFB),
+                          filled: false,
+                        ),
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        hint: Text(
+                          "Select event type",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                        items: items.map((String type) {
+                          return DropdownMenuItem<String>(
+                            value: type,
+                            child: Text(
+                              type,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: const Color(0xFF0C0A09),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedEventType = newValue;
+                          });
+                          if (newValue != null) {
+                            createController.eventType.value = newValue;
+                          }
+                        },
+                      );
+                    }),
                   ],
                 ),
               ),
               const SizedBox(width: 16),
               // Capacity Input
-              const Expanded(
+              Expanded(
                 child: CustomTextfild(
                   labelText: "Capacity",
                   hintText: "e.g. 100",
+                  controller: createController.capacityController,
                   keyboardType: TextInputType.number,
                 ),
               ),
@@ -255,14 +290,12 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _PlanToggle(
-                      isFreeSelected: _isFree,
+                    Obx(() => _PlanToggle(
+                      isFreeSelected: createController.isFree.value,
                       onChanged: (val) {
-                        setState(() {
-                          _isFree = val;
-                        });
+                        createController.isFree.value = val;
                       },
-                    ),
+                    )),
                   ],
                 ),
               ),
@@ -272,6 +305,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 child: CustomTextfild(
                   labelText: "Price (optional)",
                   hintText: "e.g. 0.00",
+                  controller: createController.priceController,
                   prefixIcon: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
                     child: Text(
@@ -514,3 +548,83 @@ class DashedGradientPainter extends CustomPainter {
         oldDelegate.radius != radius;
   }
 }
+
+class DynamicCategoryRow extends StatelessWidget {
+  final CreateController controller;
+  const DynamicCategoryRow({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (controller.dynamicCategories.isEmpty) {
+        return const SizedBox(
+          height: 100, 
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        child: Row(
+          children: controller.dynamicCategories.map((category) {
+            final isSelected = controller.category.value == category['id'];
+            final colors = [const Color(0xFFE6DDFA), const Color(0xFFDFEFE2), const Color(0xFFDEE5F7), const Color(0xFFFEDFE5), const Color(0xFFFFE5CF)];
+            final idx = category['name'].toString().length % colors.length;
+            final bgColor = colors[idx];
+
+            return Padding(
+              padding: const EdgeInsets.only(right: 18.0),
+              child: GestureDetector(
+                onTap: () {
+                  controller.category.value = category['id'];
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      height: 52.0,
+                      width: 52.0,
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFFEC6D43) : const Color(0x1A939393),
+                          width: isSelected ? 2.0 : 1.0,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x14000000),
+                            offset: Offset(0, 3),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          category['emoji'] ?? '✨',
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      category['name'] ?? '',
+                      style: AppTextStyle.inter(
+                        size: 12,
+                        weight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: const Color(0xFF0C0A09),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    });
+  }
+}
+

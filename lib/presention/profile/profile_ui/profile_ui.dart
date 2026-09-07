@@ -8,6 +8,7 @@ import 'package:meetvibe/presention/profile/profile_widget/profilecard.dart';
 import 'package:meetvibe/presention/profile/profile_widget/custommsg.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
 class ProfileUi extends StatelessWidget {
   const ProfileUi({super.key});
@@ -171,8 +172,7 @@ class ProfileUi extends StatelessWidget {
                 title: "Subscription",
                 iconPath: "assets/icon/Frame (2).svg",
                 onTap: () {
-
-
+                  Get.toNamed(AppRoutes.subscription);
                 },
               ),
               ProfileCard(
@@ -199,9 +199,13 @@ class ProfileUi extends StatelessWidget {
                       buttonText: "Logout",
                       iconPath: "assets/icon/Frame (27).svg",
                       onCancel: () => Get.back(),
-                      onConfirm: () {
-
-                        Get.back();
+                      onConfirm: () async {
+                        Get.back(); // Close dialog
+                        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+                        final success = await authController.logout();
+                        if (success) {
+                           Get.offAllNamed(AppRoutes.login);
+                        }
                       },
                     ),
                   );

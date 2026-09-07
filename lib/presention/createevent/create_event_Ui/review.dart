@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:meetvibe/core/route/app_routes.dart';
 import 'package:meetvibe/presention/home/home_widget/nearbycard.dart';
 import 'package:meetvibe/unity/appcolors/appcolors.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:meetvibe/presention/createevent/create_event_controller/create_controller.dart';
+import 'package:intl/intl.dart';
 
 class ReviewStep extends StatelessWidget {
   final VoidCallback? onEditTap;
@@ -15,6 +16,22 @@ class ReviewStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final createController = Get.isRegistered<CreateController>() ? Get.find<CreateController>() : Get.put(CreateController());
+    
+    // Formatting
+    String dateRange = "";
+    if (createController.startDate.value != null) {
+      dateRange = DateFormat('dd MMM yyyy').format(createController.startDate.value!);
+    }
+    String timeRange = "";
+    if (createController.startTime.value != null && createController.endTime.value != null) {
+      timeRange = "${createController.startTime.value!.format(context)} - ${createController.endTime.value!.format(context)}";
+    }
+
+    String venueStr = createController.venueType.value == 'OFFLINE' 
+        ? (createController.venueNameController.text.isNotEmpty ? "${createController.venueNameController.text}, ${createController.addressController.text}" : createController.addressController.text)
+        : createController.onlineLinkController.text;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: SizedBox(
@@ -50,16 +67,19 @@ class ReviewStep extends StatelessWidget {
             ),
 
             const SizedBox(height: 24),
-            NearbyEventCard(
-              title: 'Weekend Hike & Camping',
-              categoryName: 'Adventure',
-              categoryColor: const Color(0xFFF97316),
-              attendeeCount: 32,
-              location: 'Sajek Valley',
-              dateTime: '05 July - 8:00 AM',
-              imagePath: 'assets/image/image 6 (1).png',
-              onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-            ),
+            Obx(() {
+               return NearbyEventCard(
+                  title: createController.titleController.text.isNotEmpty ? createController.titleController.text : 'Event Title',
+                  categoryName: createController.category.value.isNotEmpty ? createController.category.value : 'Category',
+                  categoryColor: const Color(0xFFF97316),
+                  attendeeCount: int.tryParse(createController.capacityController.text) ?? 0,
+                  location: venueStr.isNotEmpty ? venueStr : 'Location',
+                  dateTime: dateRange.isNotEmpty ? dateRange : 'Date & Time',
+                  imageFile: createController.coverImage.value,
+                  imagePath: null,
+                  onJoinTap: () {}, // Prevent navigation during preview
+              );
+            }),
 
             const SizedBox(height: 24),
 
@@ -74,7 +94,7 @@ class ReviewStep extends StatelessWidget {
             const SizedBox(height: 10),
 
             Text(
-              "Experience an unforgettable weekend in Sajek Valley! Enjoy breathtaking views and thrilling outdoor adventures while connecting with fellow nature enthusiasts. Join us for hiking, campfire stories, and lasting memories!",
+              createController.agendaController.text.isNotEmpty ? createController.agendaController.text : "No description provided.",
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
@@ -106,7 +126,7 @@ class ReviewStep extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  "Sunday, 05 July 2026",
+                  dateRange.isNotEmpty ? dateRange : "No date selected",
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -127,7 +147,7 @@ class ReviewStep extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  "7:00 AM - 8:00 AM",
+                  timeRange.isNotEmpty ? timeRange : "No time selected",
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -147,12 +167,14 @@ class ReviewStep extends StatelessWidget {
                   color: Colors.grey[600],
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  "Sajek Valley, Bangladesh",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[700],
+                Expanded(
+                  child: Text(
+                    venueStr.isNotEmpty ? venueStr : "No location selected",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    ),
                   ),
                 ),
               ],

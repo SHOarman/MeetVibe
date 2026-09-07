@@ -30,6 +30,7 @@ import 'package:meetvibe/presention/profile/profile_ui/security.dart';
 import 'package:meetvibe/presention/profile/profile_ui/support_Help.dart';
 import 'package:meetvibe/presention/notification/notification.dart';
 import 'package:meetvibe/presention/message/message_ui/msg_inbox.dart';
+import 'package:meetvibe/presention/profile/profile_ui/subscription.dart';
 
 class AppPages {
   static const initial = AppRoutes.onloding1;
@@ -73,5 +74,6 @@ class AppPages {
     GetPage(name: AppRoutes.support_help, page: ()=>Support_help()),
     GetPage(name: AppRoutes.change_yourpassword, page: ()=>Changeyourpassword()),
     GetPage(name: AppRoutes.msgInbox, page: () => const MsgInbox()),
+    GetPage(name: AppRoutes.subscription, page: () => const SubscriptionUi()),
   ];
 }

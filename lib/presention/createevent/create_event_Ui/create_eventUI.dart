@@ -11,6 +11,7 @@ import 'dateTime.dart';
 import 'location.dart';
 import 'details.dart';
 import 'review.dart';
+import 'package:meetvibe/presention/createevent/create_event_controller/create_controller.dart';
 
 class CreateEventui extends StatefulWidget {
   const CreateEventui({super.key});
@@ -21,6 +22,12 @@ class CreateEventui extends StatefulWidget {
 
 class _CreateEventuiState extends State<CreateEventui> {
   int _currentStep = 0;
+
+  @override
+  void dispose() {
+    Get.delete<CreateController>();
+    super.dispose();
+  }
 
   final List<String> _stepTitles = [
     "Basic Info",
@@ -47,14 +54,33 @@ class _CreateEventuiState extends State<CreateEventui> {
               _currentStep = 3;
             });
           },
-          onPublishTap: _showSuccessDialog,
+          onPublishTap: _nextStep,
         );
       default:
         return const BasicInfoStep();
     }
   }
 
-  void _nextStep() {
+  void _nextStep() async {
+    final createController = Get.isRegistered<CreateController>() ? Get.find<CreateController>() : Get.put(CreateController());
+    
+    if (_currentStep == 0) {
+      final success = await createController.submitStep1();
+      if (!success) return;
+    } else if (_currentStep == 1) {
+      final success = await createController.submitStep2();
+      if (!success) return;
+    } else if (_currentStep == 2) {
+      final success = await createController.submitStep3();
+      if (!success) return;
+    } else if (_currentStep == 3) {
+      final success = await createController.submitStep4();
+      if (!success) return;
+    } else if (_currentStep == 4) {
+      final success = await createController.publishEvent();
+      if (!success) return;
+    }
+
     if (_currentStep < 4) {
       setState(() {
         _currentStep++;
@@ -237,13 +263,16 @@ class _CreateEventuiState extends State<CreateEventui> {
 
   @override
   Widget build(BuildContext context) {
+    final createController = Get.isRegistered<CreateController>() ? Get.find<CreateController>() : Get.put(CreateController());
     return Scaffold(
       backgroundColor: Colors.white,
 
       bottomNavigationBar: CustomBottomNavBar(selectedIndex: -1),
-      body: SafeArea(
-        child: Column(
-          children: [
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, ),
               child: Column(
@@ -326,6 +355,19 @@ class _CreateEventuiState extends State<CreateEventui> {
           ],
         ),
       ),
-    );
+      Obx(() {
+        if (createController.isLoading.value) {
+          return Container(
+            color: Colors.black.withOpacity(0.3),
+            child: const Center(
+              child: CircularProgressIndicator(color: Color(0xFFEC6D43)),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      }),
+    ],
+  ),
+);
   }
 }

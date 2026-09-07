@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:meetvibe/presention/auth/auth_widget/customtextfild.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:meetvibe/presention/createevent/create_event_controller/create_controller.dart';
 
 class DetailsStep extends StatefulWidget {
   const DetailsStep({super.key});
@@ -11,8 +13,15 @@ class DetailsStep extends StatefulWidget {
 }
 
 class _DetailsStepState extends State<DetailsStep> {
-  List<String> _tags = ["Networking"];
-  bool _isPublic = true;
+  final createController = Get.isRegistered<CreateController>() ? Get.find<CreateController>() : Get.put(CreateController());
+
+  @override
+  void initState() {
+    super.initState();
+    if (createController.tags.isEmpty) {
+      createController.tags.addAll(["tech", "networking"]);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,17 +51,18 @@ class _DetailsStepState extends State<DetailsStep> {
 
 
 
-          const CustomTextfild(
-            labelText: "Description",
+          CustomTextfild(
+            labelText: "Agenda/Description",
             hintText: "Enter event details and description...",
+            controller: createController.agendaController,
             maxLines: 4,
           ),
           const SizedBox(height: 20),
 
-          // Organizer
-          const CustomTextfild(
-            labelText: "Organizer Name",
-            hintText: "e.g. MeetVibe Team",
+          CustomTextfild(
+            labelText: "What to Bring",
+            hintText: "e.g. Laptop and business cards",
+            controller: createController.whatToBringController,
           ),
           const SizedBox(height: 20),
           Text(
@@ -64,14 +74,12 @@ class _DetailsStepState extends State<DetailsStep> {
             ),
           ),
           const SizedBox(height: 8),
-          _TagInput(
-            tags: _tags,
+          Obx(() => _TagInput(
+            tags: createController.tags.toList(),
             onChanged: (newTags) {
-              setState(() {
-                _tags = newTags;
-              });
+              createController.tags.assignAll(newTags);
             },
-          ),
+          )),
           const SizedBox(height: 24),
 
 
@@ -84,27 +92,27 @@ class _DetailsStepState extends State<DetailsStep> {
             ),
           ),
           const SizedBox(height: 8),
-          _VisibilityOption(
-            title: "Public",
-            description: "Anyone can discover and join",
-            isSelected: _isPublic,
-            onTap: () {
-              setState(() {
-                _isPublic = true;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _VisibilityOption(
-            title: "Friends Only",
-            description: "Only Your Connections can join",
-            isSelected: !_isPublic,
-            onTap: () {
-              setState(() {
-                _isPublic = false;
-              });
-            },
-          ),
+          Obx(() => Column(
+            children: [
+              _VisibilityOption(
+                title: "Public",
+                description: "Anyone can discover and join",
+                isSelected: createController.visibility.value == 'PUBLIC',
+                onTap: () {
+                  createController.visibility.value = 'PUBLIC';
+                },
+              ),
+              const SizedBox(height: 12),
+              _VisibilityOption(
+                title: "Friends Only",
+                description: "Only Your Connections can join",
+                isSelected: createController.visibility.value == 'PRIVATE',
+                onTap: () {
+                  createController.visibility.value = 'PRIVATE';
+                },
+              ),
+            ],
+          )),
         ],
       ),
     );

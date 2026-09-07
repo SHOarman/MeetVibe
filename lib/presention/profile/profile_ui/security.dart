@@ -5,6 +5,7 @@ import 'package:meetvibe/core/route/app_routes.dart';
 import 'package:meetvibe/presention/profile/profile_widget/customsecuriycard.dart';
 import 'package:meetvibe/presention/profile/profile_widget/custommsg.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
 class Security extends StatefulWidget {
   const Security({super.key});
@@ -105,9 +106,13 @@ class _SecurityState extends State<Security> {
                       isDelete: true,
                       titleColor: const Color(0xFFFF5A4A),
                       onCancel: () => Get.back(),
-                      onConfirm: () {
-                        // Handle delete account action
-                        Get.back();
+                      onConfirm: () async {
+                        Get.back(); // Close dialog
+                        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+                        final success = await authController.deleteAccount();
+                        if (success) {
+                           Get.offAllNamed(AppRoutes.login);
+                        }
                       },
                     ),
                   );

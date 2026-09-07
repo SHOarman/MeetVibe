@@ -371,12 +371,22 @@ class Authcontroller extends GetxController {
   Future<String?> verifyIdentity() async {
     try {
       isLoading.value = true;
-      final response = await GetConnect().post(
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30); // Increased timeout to 30 seconds
+
+      print('----- SENDING VERIFY IDENTITY REQUEST -----');
+      print('URL: ${Apiservices.userVerifyIdentity}');
+      
+      final response = await getConnect.post(
         Apiservices.userVerifyIdentity,
         {},
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
         }
       );
 
@@ -384,20 +394,91 @@ class Authcontroller extends GetxController {
       print('Verify Identity Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = response.body;
-        if (data is Map && data['url'] != null) {
-          return data['url'] as String;
+        final responseData = response.body;
+        if (responseData is Map && responseData['data'] != null && responseData['data']['url'] != null) {
+          return responseData['data']['url'] as String;
+        } else if (responseData is Map && responseData['url'] != null) {
+          return responseData['url'] as String; // fallback just in case
         } else {
           Get.snackbar('Error', 'Verification URL missing in response.');
           return null;
         }
       } else {
-        Get.snackbar('Error', 'Failed to initialize Stripe verification: ${response.statusText}');
+        Get.snackbar('Error', 'Failed to initialize Stripe verification: ${response.statusText ?? response.body}');
         return null;
       }
     } catch (e) {
-      Get.snackbar('Error', 'Error: $e');
+      print('Verify Identity Exception: $e'); // Printing to console
+      Get.snackbar('Error', 'Exception: $e');
       return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Logout API Call
+  Future<bool> logout() async {
+    try {
+      isLoading.value = true;
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      final response = await GetConnect().post(
+        Apiservices.authLogout,
+        {},
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        }
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await clearTokens();
+        Get.snackbar('Success', 'Logged out successfully.');
+        return true;
+      } else {
+        Get.snackbar('Error', 'Logout failed: ${response.body?['message'] ?? response.statusText}');
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Logout Exception: $e');
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Delete Account API Call
+  Future<bool> deleteAccount({String reason = "No longer needed"}) async {
+    try {
+      isLoading.value = true;
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      final getConnect = GetConnect();
+      final response = await getConnect.request(
+        Apiservices.userAccountDelete,
+        'DELETE',
+        body: {"reason": reason},
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        }
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await clearTokens();
+        Get.snackbar('Success', 'Account deleted successfully.');
+        return true;
+      } else {
+        Get.snackbar('Error', 'Failed to delete account: ${response.body?['message'] ?? response.statusText}');
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Delete Account Exception: $e');
+      return false;
     } finally {
       isLoading.value = false;
     }

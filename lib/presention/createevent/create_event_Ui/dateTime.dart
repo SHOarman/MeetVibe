@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:meetvibe/presention/auth/auth_widget/customtextfild.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:get/get.dart';
+import 'package:meetvibe/presention/createevent/create_event_controller/create_controller.dart';
 
 class DateTimeStep extends StatefulWidget {
   const DateTimeStep({super.key});
@@ -12,20 +14,7 @@ class DateTimeStep extends StatefulWidget {
 }
 
 class _DateTimeStepState extends State<DateTimeStep> {
-  final _startDateController = TextEditingController();
-  final _startTimeController = TextEditingController();
-  final _endDateController = TextEditingController();
-  final _endTimeController = TextEditingController();
-  String? _selectedTimeZone;
-
-  @override
-  void dispose() {
-    _startDateController.dispose();
-    _startTimeController.dispose();
-    _endDateController.dispose();
-    _endTimeController.dispose();
-    super.dispose();
-  }
+  final createController = Get.isRegistered<CreateController>() ? Get.find<CreateController>() : Get.put(CreateController());
 
   String _formatDate(DateTime date) {
     final weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -45,7 +34,7 @@ class _DateTimeStepState extends State<DateTimeStep> {
     return "$hour:$minute $period";
   }
 
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+  Future<void> _selectDate(BuildContext context, bool isStart) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -65,11 +54,17 @@ class _DateTimeStepState extends State<DateTimeStep> {
       },
     );
     if (picked != null) {
-      controller.text = _formatDate(picked);
+      if (isStart) {
+        createController.startDate.value = picked;
+        createController.startDateController.text = _formatDate(picked);
+      } else {
+        createController.endDate.value = picked;
+        createController.endDateController.text = _formatDate(picked);
+      }
     }
   }
 
-  Future<void> _selectTime(BuildContext context, TextEditingController controller) async {
+  Future<void> _selectTime(BuildContext context, bool isStart) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
@@ -87,7 +82,13 @@ class _DateTimeStepState extends State<DateTimeStep> {
       },
     );
     if (picked != null) {
-      controller.text = _formatTime(picked);
+      if (isStart) {
+         createController.startTime.value = picked;
+         createController.startTimeController.text = _formatTime(picked);
+      } else {
+         createController.endTime.value = picked;
+         createController.endTimeController.text = _formatTime(picked);
+      }
     }
   }
 
@@ -119,11 +120,11 @@ class _DateTimeStepState extends State<DateTimeStep> {
 
           // Start Date
           CustomTextfild(
-            controller: _startDateController,
+            controller: createController.startDateController,
             labelText: "Start Date",
             hintText: "Sat, 31 June 2026",
             readOnly: true,
-            onTap: () => _selectDate(context, _startDateController),
+            onTap: () => _selectDate(context, true),
             prefixIcon: Padding(
               padding: const EdgeInsets.all(14.0),
               child: SvgPicture.asset(
@@ -137,11 +138,11 @@ class _DateTimeStepState extends State<DateTimeStep> {
 
           // Start Time
           CustomTextfild(
-            controller: _startTimeController,
+            controller: createController.startTimeController,
             labelText: "Start Time",
             hintText: "10:00 AM",
             readOnly: true,
-            onTap: () => _selectTime(context, _startTimeController),
+            onTap: () => _selectTime(context, true),
             prefixIcon: Padding(
               padding: const EdgeInsets.all(14.0),
               child: SvgPicture.asset(
@@ -155,11 +156,11 @@ class _DateTimeStepState extends State<DateTimeStep> {
 
           // End Date (Optional)
           CustomTextfild(
-            controller: _endDateController,
-            labelText: "End Date (Optional)",
+            controller: createController.endDateController,
+            labelText: "End Date",
             hintText: "Sat, 31 June 2026",
             readOnly: true,
-            onTap: () => _selectDate(context, _endDateController),
+            onTap: () => _selectDate(context, false),
             prefixIcon: Padding(
               padding: const EdgeInsets.all(14.0),
               child: SvgPicture.asset(
@@ -173,11 +174,11 @@ class _DateTimeStepState extends State<DateTimeStep> {
 
           // End Time
           CustomTextfild(
-            controller: _endTimeController,
+            controller: createController.endTimeController,
             labelText: "End Time",
             hintText: "10:00 AM",
             readOnly: true,
-            onTap: () => _selectTime(context, _endTimeController),
+            onTap: () => _selectTime(context, false),
             prefixIcon: Padding(
               padding: const EdgeInsets.all(14.0),
               child: SvgPicture.asset(
@@ -189,88 +190,11 @@ class _DateTimeStepState extends State<DateTimeStep> {
           ),
           const SizedBox(height: 20),
 
-          // Time Zone Dropdown
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Time Zone",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF0C0A09),
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedTimeZone,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD1D5DB),
-                      width: 1,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD1D5DB),
-                      width: 1,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFEC6D43),
-                      width: 1.5,
-                    ),
-                  ),
-                  fillColor: const Color(0xFFF9FAFB),
-                  filled: false,
-                ),
-                icon: const Icon(
-                  Icons.keyboard_arrow_down,
-                  color: Color(0xFF9CA3AF),
-                ),
-                hint: Text(
-                  "select time zone",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF9CA3AF),
-                  ),
-                ),
-                items: [
-                  'GMT+6 (Dhaka)',
-                  'GMT+0 (London)',
-                  'EST (New York)',
-                  'PST (Los Angeles)'
-                ].map((String tz) {
-                  return DropdownMenuItem<String>(
-                    value: tz,
-                    child: Text(
-                      tz,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF0C0A09),
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedTimeZone = newValue;
-                  });
-                },
-              ),
-            ],
+          // Time Zone TextField
+          CustomTextfild(
+            controller: createController.timezoneController,
+            labelText: "Time Zone",
+            hintText: "E.g., Asia/Dhaka or GMT+6",
           ),
           const SizedBox(height: 24),
         ],

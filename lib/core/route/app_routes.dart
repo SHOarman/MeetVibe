@@ -39,5 +39,6 @@ static const String security='/security';
 static const String support_help='/support_help';
 static const String change_yourpassword='/change_yourpassword';
 static const String msgInbox = '/msgInbox';
+static const String subscription = '/subscription';
 
 }

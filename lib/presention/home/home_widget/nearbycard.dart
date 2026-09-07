@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:meetvibe/global_widget/eventbutton.dart';
@@ -10,7 +11,8 @@ class NearbyEventCard extends StatelessWidget {
   final int attendeeCount;
   final String location;
   final String dateTime;
-  final String imagePath;
+  final String? imagePath;
+  final File? imageFile;
   final VoidCallback onJoinTap;
   final double? width; // Optional width override
 
@@ -22,7 +24,8 @@ class NearbyEventCard extends StatelessWidget {
     required this.attendeeCount,
     required this.location,
     required this.dateTime,
-    required this.imagePath,
+    this.imagePath,
+    this.imageFile,
     required this.onJoinTap,
     this.width,
   });
@@ -59,12 +62,25 @@ class NearbyEventCard extends StatelessWidget {
                 topLeft: Radius.circular(16.0),
                 topRight: Radius.circular(16.0),
               ),
-              child: Image.asset(
-                imagePath,
-                width: cardWidth,
-                height: imageHeight,
-                fit: BoxFit.cover,
-              ),
+              child: imageFile != null
+                  ? Image.file(
+                      imageFile!,
+                      width: cardWidth,
+                      height: imageHeight,
+                      fit: BoxFit.cover,
+                    )
+                  : Image.asset(
+                      imagePath ?? 'assets/image/image 6 (1).png',
+                      width: cardWidth,
+                      height: imageHeight,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, trace) => Container(
+                        width: cardWidth,
+                        height: imageHeight,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image, color: Colors.grey),
+                      ),
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.all(10.0),

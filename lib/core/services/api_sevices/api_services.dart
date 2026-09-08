@@ -1,7 +1,7 @@
 class Apiservices {
   Apiservices._();
 
-  static const String baseUrl = "https://ocean-article-hair-july.trycloudflare.com/api/v1";
+  static const String baseUrl = "https://garmin-diagnosis-unexpected-bestsellers.trycloudflare.com/api/v1";
 
   //========================================================Chat=======================================
   static const String chatConversations = "$baseUrl/chat/conversations";
@@ -42,6 +42,7 @@ class Apiservices {
   static String eventPublish(String id) => "$baseUrl/event/publish/$id";
   static const String eventCategories = "$baseUrl/event/categories";
   static const String eventList = "$baseUrl/event";
+  static const String eventSuggestions = "$baseUrl/event/suggestions";
   static const String eventMine = "$baseUrl/event/mine";
   static String eventDetails(String id) => "$baseUrl/event/$id";
   static String eventDelete(String id) => "$baseUrl/event/$id";
@@ -75,4 +76,17 @@ class Apiservices {
   static const String userAccountDelete = "$baseUrl/user/account";
   static const String get_category="$baseUrl/event/categories";
   
+  static String fixImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    try {
+      if (url.contains('.trycloudflare.com')) {
+        final uri = Uri.parse(url);
+        final currentUri = Uri.parse(baseUrl);
+        return url.replaceFirst(uri.host, currentUri.host).replaceFirst('http://', 'https://');
+      }
+    } catch (e) {
+      return url;
+    }
+    return url;
+  }
 }

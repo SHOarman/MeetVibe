@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
+import 'package:meetvibe/presention/event/event_controller/event_join_controller.dart';
+import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 
 class EventDetailsUi extends StatelessWidget {
   const EventDetailsUi({super.key});
@@ -39,6 +44,47 @@ class EventDetailsUi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final homeController = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
+    final eventJoinController = Get.isRegistered<EventJoinController>() ? Get.find<EventJoinController>() : Get.put(EventJoinController());
+    final profileController = Get.isRegistered<ProfileController>() ? Get.find<ProfileController>() : Get.put(ProfileController());
+    final Map<String, dynamic>? event = Get.arguments as Map<String, dynamic>?;
+    
+    final currentUserId = profileController.userId.value;
+
+    final eventId = event?['id'] ?? event?['_id'];
+    final bool isHost = (event != null && event['creatorId'] == currentUserId) || (eventId != null && homeController.myEvents.any((e) {
+      final myEventId = e['id'] ?? e['_id'];
+      return myEventId != null && myEventId == eventId;
+    }));
+
+    // Check Participation Status
+    String participationStatus = '';
+    
+    final participations = event?['participations'] ?? event?['participants'];
+    if (participations != null && participations is List && currentUserId.isNotEmpty) {
+      for (var p in participations) {
+        final pUserId = p['userId'] ?? (p['user'] != null ? p['user']['id'] ?? p['user']['_id'] : '');
+        if (pUserId == currentUserId) {
+          participationStatus = p['status'] ?? 'PENDING';
+          break;
+        }
+      }
+    }
+
+    final String title = event?['title'] ?? "Unknown Event";
+    final String category = event?['category'] ?? "No category";
+    final String coverImage = event?['coverImage'] ?? "";
+    final String location = event?['address'] ?? event?['venueName'] ?? "Location TBA";
+    final String agenda = event?['agenda'] ?? "No description available.";
+    final int capacity = event?['capacity'] ?? 0;
+    final bool isFree = event?['isFree'] == true || event?['isFree'] == 'true';
+    final double price = (event?['price'] != null) ? double.tryParse(event!['price'].toString()) ?? 0.0 : 0.0;
+    
+    String startDateRaw = event?['startDate']?.toString() ?? "";
+    String displayDate = startDateRaw.isNotEmpty ? startDateRaw.split('T').first : "Date TBA";
+    
+    String displayTime = event?['startTime']?.toString() ?? "Time TBA";
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -52,12 +98,22 @@ class EventDetailsUi extends StatelessWidget {
                 Stack(
                   children: [
                     // Cover Image
-                    Image.asset(
-                      "assets/image/image 6 (5).png",
-                      height: 330,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    coverImage.startsWith('http')
+                        ? Image.network(
+                            Apiservices.fixImageUrl(coverImage),
+                            height: 330,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, tr) => Container(
+                              height: 330, width: double.infinity, color: Colors.grey[300],
+                            ),
+                          )
+                        : Image.asset(
+                            "assets/image/image 6 (5).png",
+                            height: 330,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                     // Gradient Shadow Overlay
                     Container(
                       height: 330,
@@ -84,7 +140,7 @@ class EventDetailsUi extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Weekend Hike & Camping",
+                            title,
                             style: GoogleFonts.poppins(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -93,7 +149,7 @@ class EventDetailsUi extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "A perfect match for your interests",
+                            category,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w400,
@@ -111,7 +167,7 @@ class EventDetailsUi extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                "05 July - 7:00 AM",
+                                "$displayDate - $displayTime",
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
@@ -131,7 +187,7 @@ class EventDetailsUi extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                "Sajek Valley, Bangladesh",
+                                location,
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
@@ -165,7 +221,7 @@ class EventDetailsUi extends StatelessWidget {
                             _buildAttendeeAvatars(),
                             const SizedBox(width: 8),
                             Text(
-                              "24 others going",
+                              "$capacity others going",
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
@@ -189,7 +245,7 @@ class EventDetailsUi extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "Experience an unforgettable weekend in Sajek Valley! Enjoy breathtaking views and thrilling outdoor adventures while connecting with fellow nature enthusiasts. Join us for hiking, campfire stories, and lasting memories!",
+                          agenda,
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w400,
@@ -221,7 +277,7 @@ class EventDetailsUi extends StatelessWidget {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              "Sunday, 05 July 2026",
+                              displayDate,
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -241,7 +297,7 @@ class EventDetailsUi extends StatelessWidget {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              "7:00 AM - 8:00 AM",
+                              displayTime,
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -261,7 +317,7 @@ class EventDetailsUi extends StatelessWidget {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              "Sajek Valley, Bangladesh",
+                              location,
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -274,62 +330,69 @@ class EventDetailsUi extends StatelessWidget {
                         const Divider(color: Color(0x1A000000), height: 1),
                         const SizedBox(height: 24),
 
-                        // Spot Reserved Card
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFE7CF).withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0x1A000000),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Your spot is reserved!",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF0C0A09),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "You're all set to join the event.",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                        color: const Color(0xFF6B7280),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                        // Spot Reserved Card or Host Card
+                        if (isHost || participationStatus.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isHost ? const Color(0xFFE5F1FF).withOpacity(0.5) : const Color(0xFFFFE7CF).withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0x1A000000),
                               ),
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: const Color(0xFFEC6D43),
-                                    width: 1,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isHost 
+                                            ? "You are the Host!" 
+                                            : (participationStatus == 'APPROVED' ? "Your spot is reserved!" : "Request is $participationStatus"),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFF0C0A09),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        isHost 
+                                            ? "Manage your event from the dashboard."
+                                            : (participationStatus == 'APPROVED' ? "You're all set to join the event." : "Pending host approval."),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          color: const Color(0xFF6B7280),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.calendar_today_rounded,
-                                  color: Color(0xFFEC6D43),
-                                  size: 18,
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isHost ? Colors.blue : const Color(0xFFEC6D43),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    isHost ? Icons.manage_accounts : Icons.calendar_today_rounded,
+                                    color: isHost ? Colors.blue : const Color(0xFFEC6D43),
+                                    size: 18,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
+                        if (isHost || participationStatus.isNotEmpty)
+                          const SizedBox(height: 24),
                         const SizedBox(height: 80), // Padding to clear bottom navigation bar
                       ],
                     ),
@@ -411,7 +474,7 @@ class EventDetailsUi extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Free Event",
+                    isFree ? "Free Event" : "\$${price.toStringAsFixed(2)}",
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -419,7 +482,7 @@ class EventDetailsUi extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "No payment required",
+                    isFree ? "No payment required" : "Premium Event",
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w400,
@@ -429,26 +492,30 @@ class EventDetailsUi extends StatelessWidget {
                 ],
               ),
               GestureDetector(
-                onTap: () {
-                  // Perform join event action
+                onTap: (isHost || participationStatus.isNotEmpty) ? null : () {
+                  if (eventId != null) {
+                    eventJoinController.joinEvent(eventId.toString(), isFree: isFree);
+                  } else {
+                    Get.snackbar("Error", "Invalid event ID. Cannot join.");
+                  }
                 },
                 child: Container(
                   height: 44,
                   width: 140,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFEC6D43), Color(0xFFFFB670)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
+                    color: isHost 
+                        ? Colors.grey 
+                        : (participationStatus.isNotEmpty ? (participationStatus == 'APPROVED' ? Colors.green : Colors.orange) : const Color(0xFFF96030)),
+                    borderRadius: BorderRadius.circular(22),
                   ),
                   child: Center(
                     child: Text(
-                      "Join Event",
+                      isHost 
+                          ? "You are Host" 
+                          : (participationStatus.isNotEmpty ? participationStatus : "Join Event"),
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),

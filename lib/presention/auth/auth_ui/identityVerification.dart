@@ -91,17 +91,14 @@ class Identityverification extends StatelessWidget {
               const SizedBox(height: 40),
 
               Obx(() => CustomButton(
-                text: "Continue", 
+                text: "Continue (Mock Verfify)", 
                 isLoading: authController.isLoading.value,
                 onTap: () async {
-                  final urlString = await authController.verifyIdentity();
-                  if (urlString != null) {
-                    final uri = Uri.parse(urlString);
-                    try {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    } catch (e) {
-                      Get.snackbar('Error', 'Could not open URL: $e');
-                    }
+                  // Replaced real Stripe verification with Mock Identity Verification for dev mode.
+                  // This simulates successful verification locally.
+                  final isSuccess = await authController.mockVerifyIdentity();
+                  if (isSuccess) {
+                    Get.offAllNamed(AppRoutes.homeui);
                   }
                 }
               )),

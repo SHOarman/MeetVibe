@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:meetvibe/global_widget/eventbutton.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 
 class NearbyEventCard extends StatelessWidget {
   final String title;
@@ -15,6 +17,8 @@ class NearbyEventCard extends StatelessWidget {
   final File? imageFile;
   final VoidCallback onJoinTap;
   final double? width; // Optional width override
+  final bool isJoined;
+  final bool isFree;
 
   const NearbyEventCard({
     super.key,
@@ -28,6 +32,8 @@ class NearbyEventCard extends StatelessWidget {
     this.imageFile,
     required this.onJoinTap,
     this.width,
+    this.isJoined = false,
+    this.isFree = true,
   });
 
   @override
@@ -69,18 +75,31 @@ class NearbyEventCard extends StatelessWidget {
                       height: imageHeight,
                       fit: BoxFit.cover,
                     )
-                  : Image.asset(
-                      imagePath ?? 'assets/image/image 6 (1).png',
-                      width: cardWidth,
-                      height: imageHeight,
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, trace) => Container(
-                        width: cardWidth,
-                        height: imageHeight,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image, color: Colors.grey),
-                      ),
-                    ),
+                  : (imagePath != null && imagePath!.startsWith('http')
+                      ? Image.network(
+                          Apiservices.fixImageUrl(imagePath!),
+                          width: cardWidth,
+                          height: imageHeight,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, trace) => Container(
+                            width: cardWidth,
+                            height: imageHeight,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.image, color: Colors.grey),
+                          ),
+                        )
+                      : Image.asset(
+                          imagePath ?? 'assets/image/image 6 (1).png',
+                          width: cardWidth,
+                          height: imageHeight,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, trace) => Container(
+                            width: cardWidth,
+                            height: imageHeight,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.image, color: Colors.grey),
+                          ),
+                        )),
             ),
             Padding(
               padding: const EdgeInsets.all(10.0),
@@ -211,7 +230,7 @@ class NearbyEventCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   // Join Event Button (scaled to fit card width)
                   EventButton(
-                    text: 'Join Event',
+                    text: isJoined ? 'Joined' : (isFree ? 'Join Event' : 'Pay'),
                     width: double.infinity,
                     onTap: onJoinTap,
                   ),

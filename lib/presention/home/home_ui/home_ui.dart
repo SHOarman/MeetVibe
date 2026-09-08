@@ -9,17 +9,29 @@ import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/presention/home/home_widget/nearbycard.dart';
 import 'package:meetvibe/presention/home/home_widget/tendingcatory.dart';
 import 'package:meetvibe/presention/home/home_widget/upcomingevent.dart';
+import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
 
 class HomeUi extends StatelessWidget {
   const HomeUi({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final homeController = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
+    
+    // Controller initializes data automatically in onInit()
+
     return Scaffold(
       bottomNavigationBar: CustomBottomNavBar(selectedIndex: 0),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await homeController.fetchNearbyEvents();
+          await homeController.fetchUpcomingEvents();
+          await homeController.fetchMyEvents();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
@@ -80,37 +92,50 @@ class HomeUi extends StatelessWidget {
               const SizedBox(height: 16),
 
               //-========================================Nearby Events Scroll============================================
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
-                  children: [
-                    NearbyEventCard(
-                      width: 176.0,
-                      title: 'Live Music Festival',
-                      categoryName: 'Music',
-                      categoryColor: const Color(0xFF6B46C1),
-                      attendeeCount: 124,
-                      location: 'Gulsan lake park',
-                      dateTime: '02 July - 6:00 PM',
-                      imagePath: 'assets/image/image 6 (1).png',
-                      onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-                    ),
-                    const SizedBox(width: 14),
-                    NearbyEventCard(
-                      width: 176.0,
-                      title: 'Weekend Hike & Camping',
-                      categoryName: 'Adventure',
-                      categoryColor: const Color(0xFFF97316),
-                      attendeeCount: 32,
-                      location: 'Sajek Valley',
-                      dateTime: '05 July - 8:00 AM',
-                      imagePath: 'assets/image/image 6 (1).png',
-                      onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-                    ),
-                  ],
-                ),
-              ),
+              Obx(() {
+                if (homeController.isLoadingNearby.value) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                if (homeController.nearbyEvents.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: Text("No events found")),
+                  );
+                }
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: homeController.nearbyEvents.map((event) {
+                      final eventId = (event['id'] ?? event['_id'] ?? '').toString();
+                      final bool isJoined = homeController.joinedEventIds.contains(eventId);
+                      final bool isFree = event['isFree'] == true || event['isFree'] == 'true';
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 14.0),
+                        child: NearbyEventCard(
+                          width: 176.0,
+                          title: event['title'] ?? 'Unknown Event',
+                          categoryName: event['category'] ?? 'Category',
+                          categoryColor: const Color(0xFF6B46C1),
+                          attendeeCount: event['capacity'] ?? 0,
+                          location: event['address'] ?? event['venueName'] ?? 'Location TBA',
+                          dateTime: homeController.getFormattedDate(event['startDate']),
+                          imagePath: event['coverImage'] ?? 'assets/image/image 6 (1).png',
+                          isJoined: isJoined,
+                          isFree: isFree,
+                          onJoinTap: () => Get.toNamed(AppRoutes.eventdetels, arguments: event),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              }),
 
               const SizedBox(height: 32),
               
@@ -177,42 +202,56 @@ class HomeUi extends StatelessWidget {
               const SizedBox(height: 16),
 
               //-========================================Upcoming Events Scroll============================================
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
-                  children: [
-                    UpcomingEventCard(
-                      width: 176.0,
-                      day: '05',
-                      month: 'Jun',
-                      title: 'Teach Talk',
-                      attendeeCount: 68,
-                      location: 'Zoom Office, Dhaka',
-                      distance: '2.1 km away',
-                      imagePath: 'assets/image/image 6 (3).png',
-                      onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-                    ),
-                    const SizedBox(width: 14),
-                    UpcomingEventCard(
-                      width: 176.0,
-                      day: '08',
-                      month: 'Jun',
-                      title: 'Morning Yoga Session',
-                      attendeeCount: 35,
-                      location: 'Hatirjhil Park',
-                      distance: '3.4 km away',
-                      imagePath: 'assets/image/image 6 (2).png',
-                      onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-                    ),
-                  ],
-                ),
-              ),
+              Obx(() {
+                if (homeController.isLoadingUpcoming.value) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                if (homeController.upcomingEvents.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: Text("No upcoming events found")),
+                  );
+                }
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: homeController.upcomingEvents.map((event) {
+                      final eventId = (event['id'] ?? event['_id'] ?? '').toString();
+                      final bool isJoined = homeController.joinedEventIds.contains(eventId);
+                      final bool isFree = event['isFree'] == true || event['isFree'] == 'true';
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 14.0),
+                        child: UpcomingEventCard(
+                          width: 176.0,
+                          day: homeController.getDay(event['startDate']),
+                          month: homeController.getMonth(event['startDate']),
+                          title: event['title'] ?? 'Unknown Event',
+                          attendeeCount: event['capacity'] ?? 0,
+                          location: event['address'] ?? event['venueName'] ?? 'Location TBA',
+                          distance: '2.1 km away', // Backend may not provide distance yet
+                          imagePath: event['coverImage'] ?? 'assets/image/image 6 (3).png',
+                          isJoined: isJoined,
+                          isFree: isFree,
+                          onJoinTap: () => Get.toNamed(AppRoutes.eventdetels, arguments: event),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              }),
 
               const SizedBox(height: 100),
             ],
           ),
         ),
+      ),
       ),
     );
   }

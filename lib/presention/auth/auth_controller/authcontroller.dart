@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,13 +28,13 @@ class Authcontroller extends GetxController {
 
   @override
   void onClose() {
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    loginEmailController.dispose();
-    loginPasswordController.dispose();
-    forgotEmailController.dispose();
-    resetPasswordController.dispose();
+    // nameController.dispose();
+    // emailController.dispose();
+    // passwordController.dispose();
+    // loginEmailController.dispose();
+    // loginPasswordController.dispose();
+    // forgotEmailController.dispose();
+    // resetPasswordController.dispose();
     super.onClose();
   }
 
@@ -161,7 +162,7 @@ class Authcontroller extends GetxController {
 
       final response = await GetConnect().post(
         Apiservices.authRegister,
-        payload,
+        jsonEncode(payload),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -411,6 +412,47 @@ class Authcontroller extends GetxController {
       print('Verify Identity Exception: $e'); // Printing to console
       Get.snackbar('Error', 'Exception: $e');
       return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Mock Verify Identity API Call (Development Mode)
+  Future<bool> mockVerifyIdentity() async {
+    try {
+      isLoading.value = true;
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+
+      print('----- SENDING MOCK VERIFY IDENTITY REQUEST -----');
+      print('URL: ${Apiservices.userMockVerifyIdentity}');
+      
+      final response = await getConnect.post(
+        Apiservices.userMockVerifyIdentity,
+        {},
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        }
+      );
+
+      print('Mock Verify Identity Status: ${response.statusCode}');
+      print('Mock Verify Identity Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.snackbar('Success', 'Identity verified successfully (Mock mode).');
+        return true;
+      } else {
+        Get.snackbar('Error', 'Failed to verify identity: ${response.body?['message'] ?? response.statusText}');
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Exception: $e');
+      return false;
     } finally {
       isLoading.value = false;
     }

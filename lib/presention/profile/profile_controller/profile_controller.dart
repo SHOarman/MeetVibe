@@ -11,9 +11,13 @@ class ProfileController extends GetxController {
   final RxString name = ''.obs;
   final RxString username = ''.obs;
   final RxString email = ''.obs;
+  final RxString dateOfBirth = ''.obs;
+  final RxString gender = 'Male'.obs;
+  final RxString address = ''.obs;
   final RxnString image = RxnString(null);
   final RxString localImage = ''.obs; // local fallback
   final RxBool isVerified = false.obs;
+  final RxString userId = ''.obs;
 
   @override
   void onInit() {
@@ -48,10 +52,13 @@ class ProfileController extends GetxController {
           name.value = user['name'] ?? '';
           email.value = user['email'] ?? '';
           
-          // Generate an @username from email
-          if (email.value.isNotEmpty) {
-             username.value = '@${email.value.split('@').first}';
-          }
+          userId.value = user['id'] ?? user['_id'] ?? '';
+          prefs.setString('userId', userId.value); // save for easy access
+          
+          username.value = user['username'] ?? (email.value.isNotEmpty ? '@${email.value.split('@').first}' : '');
+          dateOfBirth.value = user['dateOfBirth'] ?? '';
+          gender.value = user['gender'] ?? 'Male';
+          address.value = user['address'] ?? '';
           
           image.value = user['image'];
 
@@ -89,7 +96,13 @@ class ProfileController extends GetxController {
     }
   }
 
-  Future<bool> updateProfile(String newName, String? newImage, {String? localImagePath}) async {
+  Future<bool> updateProfile(String newName, String? newImage, {
+    String? localImagePath, 
+    String? username, 
+    String? dateOfBirth, 
+    String? gender, 
+    String? address
+  }) async {
     try {
       isLoading.value = true;
       final prefs = await SharedPreferences.getInstance();
@@ -104,9 +117,15 @@ class ProfileController extends GetxController {
         "name": newName,
       };
 
+      if (username != null && username.isNotEmpty) body["username"] = username;
+      if (dateOfBirth != null && dateOfBirth.isNotEmpty) body["dateOfBirth"] = dateOfBirth;
+      if (gender != null && gender.isNotEmpty) body["gender"] = gender;
+      if (address != null && address.isNotEmpty) body["address"] = address;
+
       final currentImage = newImage ?? image.value;
       if (currentImage != null && currentImage.trim().isNotEmpty) {
         body["image"] = currentImage;
+        body["profileImage"] = currentImage;
       }
 
       final response = await GetConnect().put(

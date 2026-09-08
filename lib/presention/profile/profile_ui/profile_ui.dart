@@ -9,6 +9,7 @@ import 'package:meetvibe/presention/profile/profile_widget/custommsg.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart';
 import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
+import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
 
 class ProfileUi extends StatelessWidget {
   const ProfileUi({super.key});
@@ -16,6 +17,7 @@ class ProfileUi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profileController = Get.isRegistered<ProfileController>() ? Get.find<ProfileController>() : Get.put(ProfileController());
+    final homeController = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
 
     return Scaffold(
       bottomNavigationBar: CustomBottomNavBar(selectedIndex: 3),
@@ -64,6 +66,7 @@ class ProfileUi extends StatelessWidget {
                  final isVerified = profileController.isVerified.value;
                  final name = profileController.name.value.isEmpty ? "Loading..." : profileController.name.value;
                  final username = profileController.username.value.isEmpty ? "..." : profileController.username.value;
+                 final address = profileController.address.value;
 
                  return Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -146,6 +149,19 @@ class ProfileUi extends StatelessWidget {
                               ),
                             ),
                           ],
+                          if (address.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              address,
+                              style: AppTextStyle.poppins(
+                                size: 13,
+                                weight: FontWeight.w400,
+                                color: const Color(0xff757575), // Slightly lighter color for address
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -154,6 +170,13 @@ class ProfileUi extends StatelessWidget {
               }),
 
               //===================profile card===================================================
+              Obx(() => homeController.myEvents.isNotEmpty ? ProfileCard(
+                title: "My Events",
+                iconPath: "assets/icon/Frame (23).svg", // Use a relevant icon or default
+                onTap: () {
+                  Get.toNamed(AppRoutes.myEvents);
+                },
+              ) : const SizedBox.shrink()),
               ProfileCard(
                 title: "Edit Profile",
                 iconPath: "assets/icon/Frame.svg",

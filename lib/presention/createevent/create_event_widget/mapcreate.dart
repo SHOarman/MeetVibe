@@ -93,7 +93,7 @@ class MapCreateWidget extends StatelessWidget {
               ),
             ),
           ),
-          // Floating GPS Target Button
+        
           Positioned(
             right: 16,
             bottom: 35, // Positioned overlapping map and bottom card

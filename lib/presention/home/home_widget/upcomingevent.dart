@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:meetvibe/global_widget/eventbutton.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 
 class UpcomingEventCard extends StatelessWidget {
   final String day;
@@ -13,6 +15,8 @@ class UpcomingEventCard extends StatelessWidget {
   final String imagePath;
   final VoidCallback onJoinTap;
   final double? width; // Optional width override
+  final bool isJoined;
+  final bool isFree;
 
   const UpcomingEventCard({
     super.key,
@@ -25,6 +29,8 @@ class UpcomingEventCard extends StatelessWidget {
     required this.imagePath,
     required this.onJoinTap,
     this.width,
+    this.isJoined = false,
+    this.isFree = true,
   });
 
   @override
@@ -96,11 +102,27 @@ class UpcomingEventCard extends StatelessWidget {
                       bottomLeft: Radius.circular(12.0),
                       bottomRight: Radius.circular(12.0),
                     ),
-                    child: Image.asset(
-                      imagePath,
-                      height: imageHeight,
-                      fit: BoxFit.cover,
-                    ),
+                    child: imagePath.startsWith('http')
+                        ? Image.network(
+                            Apiservices.fixImageUrl(imagePath),
+                            height: imageHeight,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, trace) => Container(
+                              height: imageHeight,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image, color: Colors.grey),
+                            ),
+                          )
+                        : Image.asset(
+                            imagePath,
+                            height: imageHeight,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, trace) => Container(
+                              height: imageHeight,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image, color: Colors.grey),
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -201,7 +223,7 @@ class UpcomingEventCard extends StatelessWidget {
                       ],
                     ),
                     EventButton(
-                      text: 'Join Event',
+                      text: isJoined ? 'Joined' : (isFree ? 'Join Event' : 'Pay'),
                       width: double.infinity,
                       onTap: onJoinTap,
                     ),

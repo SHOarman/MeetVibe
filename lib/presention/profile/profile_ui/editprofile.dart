@@ -20,19 +20,34 @@ class Editprofile extends StatefulWidget {
 
 class _EditprofileState extends State<Editprofile> {
   late TextEditingController _fullNameController;
+  late TextEditingController _usernameController;
   late TextEditingController _emailController;
+  late TextEditingController _addressController;
   final TextEditingController _dobController = TextEditingController(text: "12/11/2001");
   String? _selectedGender = "Male";
   File? _pickedImage;
   final ProfileController profileController = Get.isRegistered<ProfileController>() ? Get.find<ProfileController>() : Get.put(ProfileController());
   late Worker _nameWorker;
   late Worker _emailWorker;
+  late Worker _usernameWorker;
+  late Worker _addressWorker;
+  late Worker _dobWorker;
+  late Worker _genderWorker;
 
   @override
   void initState() {
     super.initState();
     _fullNameController = TextEditingController(text: profileController.name.value);
+    _usernameController = TextEditingController(text: profileController.username.value);
     _emailController = TextEditingController(text: profileController.email.value);
+    _addressController = TextEditingController(text: profileController.address.value);
+    
+    if (profileController.dateOfBirth.value.isNotEmpty) {
+      _dobController.text = profileController.dateOfBirth.value;
+    }
+    if (profileController.gender.value.isNotEmpty) {
+      _selectedGender = profileController.gender.value;
+    }
 
     // Ensure controllers update if API fetches data *after* this page loads
     _nameWorker = ever(profileController.name, (String val) {
@@ -46,14 +61,47 @@ class _EditprofileState extends State<Editprofile> {
         _emailController.text = val;
       }
     });
+    
+    _usernameWorker = ever(profileController.username, (String val) {
+      if (_usernameController.text.isEmpty && val.isNotEmpty) {
+        _usernameController.text = val;
+      }
+    });
+    
+    _addressWorker = ever(profileController.address, (String val) {
+      if (_addressController.text.isEmpty && val.isNotEmpty) {
+        _addressController.text = val;
+      }
+    });
+
+    _dobWorker = ever(profileController.dateOfBirth, (String val) {
+      if (val.isNotEmpty) {
+        _dobController.text = val;
+      }
+    });
+
+    _genderWorker = ever(profileController.gender, (String val) {
+      if (val.isNotEmpty) {
+        setState(() {
+          _selectedGender = val;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _nameWorker.dispose();
     _emailWorker.dispose();
+    _usernameWorker.dispose();
+    _addressWorker.dispose();
+    _dobWorker.dispose();
+    _genderWorker.dispose();
+    
     _fullNameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
+    _addressController.dispose();
     _dobController.dispose();
     super.dispose();
   }
@@ -279,6 +327,14 @@ class _EditprofileState extends State<Editprofile> {
               ),
 
               const SizedBox(height: 20),
+              
+              CustomTextfild(
+                controller: _usernameController,
+                labelText: "Username",
+                hintText: "Enter your username",
+              ),
+
+              const SizedBox(height: 20),
 
               CustomTextfild(
                 controller: _emailController,
@@ -387,6 +443,14 @@ class _EditprofileState extends State<Editprofile> {
                 ],
               ),
 
+              const SizedBox(height: 20),
+
+              CustomTextfild(
+                controller: _addressController,
+                labelText: "Address",
+                hintText: "Enter your address",
+              ),
+
               const SizedBox(height: 40),
 
               Obx(() => CustomButton(
@@ -397,8 +461,12 @@ class _EditprofileState extends State<Editprofile> {
 
                   final success = await profileController.updateProfile(
                     _fullNameController.text,
-                    null, // image upload not implemented in API
+                    null, // image upload not implemented in API directly here right now
                     localImagePath: _pickedImage?.path,
+                    username: _usernameController.text,
+                    dateOfBirth: _dobController.text,
+                    gender: _selectedGender,
+                    address: _addressController.text,
                   );
 
                   if (success) {

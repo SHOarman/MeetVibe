@@ -7,10 +7,11 @@ class EventHostController extends GetxController {
   final RxBool isReviewing = false.obs;
   final RxBool isFinalizing = false.obs;
 
-  final RxList<dynamic> pendingParticipants = <dynamic>[].obs;
+  final RxList<dynamic> allParticipants = <dynamic>[].obs;
+  final RxMap<String, dynamic> hostData = <String, dynamic>{}.obs;
 
-  // 1. Get Pending Payments for Event
-  Future<void> getPendingPayments(String eventId) async {
+  // 1. Get All Participants for Event
+  Future<void> getEventParticipants(String eventId) async {
     try {
       isLoadingPending.value = true;
       final prefs = await SharedPreferences.getInstance();
@@ -19,7 +20,7 @@ class EventHostController extends GetxController {
       if (token == null) return;
 
       final response = await GetConnect().get(
-        Apiservices.participationPendingPayments(eventId),
+        Apiservices.eventParticipants(eventId),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
@@ -28,18 +29,61 @@ class EventHostController extends GetxController {
 
       if (response.statusCode == 200) {
         final data = response.body['data'];
-        if (data != null && data is List) {
-           pendingParticipants.value = data;
-        } else if (response.body is List) {
-           pendingParticipants.value = response.body;
+        if (data != null && data['participants'] != null) {
+           allParticipants.value = data['participants'];
+           hostData.value = data['host'] ?? {};
+           
+           // Fetch and map connections dynamically so UI reflects it immediately
+           try {
+             final pendingRes = await GetConnect().get("${Apiservices.baseUrl}/connection/pending", headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'});
+             final connRes = await GetConnect().get("${Apiservices.baseUrl}/connection", headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'});
+             
+             List pending = [];
+             if (pendingRes.statusCode == 200) pending = pendingRes.body?['data']?['requests'] ?? [];
+             
+             List allConns = [];
+             if (connRes.statusCode == 200) allConns = connRes.body?['data']?['connections'] ?? [];
+             
+             for (var p in allParticipants) {
+                final uid = p['user']?['id'] ?? p['user']?['_id'];
+                if (uid == null) continue;
+                
+                // Check if in pending
+                for (var req in pending) {
+                   final reqUid = req['requester']?['id'] ?? req['requester']?['_id'];
+                   final recvUid = req['receiver']?['id'] ?? req['receiver']?['_id'];
+                   if (reqUid == uid || recvUid == uid) {
+                      p['connectionStatus'] = 'PENDING';
+                   }
+                }
+                
+                // Check if already connected
+                for (var c in allConns) {
+                   final reqUid = c['requester']?['id'] ?? c['requester']?['_id'];
+                   final recvUid = c['receiver']?['id'] ?? c['receiver']?['_id'];
+                   final users = c['users'] as List?;
+                   bool inUsers = false;
+                   if (users != null) {
+                      inUsers = users.any((u) => (u['id'] ?? u['_id']) == uid);
+                   }
+                   if (reqUid == uid || recvUid == uid || inUsers || (c['user']?['id'] == uid)) {
+                      p['connectionStatus'] = 'CONNECTED';
+                   }
+                }
+             }
+           } catch (e) {
+             print("Error fetching connection statuses: $e");
+           }
+           allParticipants.refresh();
         } else {
-           pendingParticipants.clear();
+           allParticipants.clear();
+           hostData.value = {};
         }
       } else {
-        print("Failed to get pending payments: ${response.statusCode}");
+        print("Failed to get participants: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error fetching pending payments: $e");
+      print("Error fetching participants: $e");
     } finally {
       isLoadingPending.value = false;
     }
@@ -67,8 +111,13 @@ class EventHostController extends GetxController {
       );
 
       if (response.statusCode == 200) {
-        // successfully reviewed
-        pendingParticipants.removeWhere((p) => p['id'] == participantId || p['_id'] == participantId);
+        // successfully reviewed, optionally we can re-fetch or just update local
+        final index = allParticipants.indexWhere((p) => (p['id'] == participantId || p['_id'] == participantId));
+        if (index != -1) {
+          allParticipants[index]['status'] = action;
+          allParticipants[index]['paymentStatus'] = action == 'APPROVED' ? 'HELD_IN_ESCROW' : allParticipants[index]['paymentStatus'];
+          allParticipants.refresh();
+        }
         return true;
       } else {
         return false;

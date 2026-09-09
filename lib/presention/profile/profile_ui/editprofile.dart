@@ -108,7 +108,12 @@ class _EditprofileState extends State<Editprofile> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 200,    // Extreme compression (node 100kb limit)
+      maxHeight: 200,
+      imageQuality: 20, // 20% quality
+    );
     if (pickedFile != null) {
       setState(() {
         _pickedImage = File(pickedFile.path);

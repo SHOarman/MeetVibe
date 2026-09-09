@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:meetvibe/core/route/app_routes.dart';
 import 'package:meetvibe/presention/profile/profile_widget/customsecuriycard.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 
@@ -59,7 +60,7 @@ class Support_help extends StatelessWidget {
                 prefix: _buildBullet(),
                 showTrailing: false,
                 onTap: () {
-                 
+                 Get.toNamed(AppRoutes.faqs);
                 },
               ),
               CustomSecurityCard(
@@ -67,7 +68,7 @@ class Support_help extends StatelessWidget {
                 prefix: _buildBullet(),
                 showTrailing: false,
                 onTap: () {
-
+                  Get.toNamed(AppRoutes.reportProblem);
                 },
               ),
               CustomSecurityCard(
@@ -75,7 +76,7 @@ class Support_help extends StatelessWidget {
                 prefix: _buildBullet(),
                 showTrailing: false,
                 onTap: () {
-
+                  Get.toNamed(AppRoutes.privacyPolicy);
                 },
               ),
               CustomSecurityCard(
@@ -83,7 +84,7 @@ class Support_help extends StatelessWidget {
                 prefix: _buildBullet(),
                 showTrailing: false,
                 onTap: () {
-
+                  Get.toNamed(AppRoutes.terms);
                 },
               ),
             ],

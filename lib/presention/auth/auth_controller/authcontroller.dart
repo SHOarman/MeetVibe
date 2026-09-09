@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:meetvibe/presention/auth/auth_model/user_model.dart';
 import 'package:meetvibe/core/services/api_sevices/api_services.dart';
+import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart';
+import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Authcontroller extends GetxController {
@@ -73,8 +76,23 @@ class Authcontroller extends GetxController {
     return false;
   }
 
-  // Refresh Token API Call
+  bool _isRefreshing = false;
+  Future<bool>? _refreshFuture;
+
+  // Refresh Token API Call (Safe for concurrent calls)
   Future<bool> refreshTokenAPI() async {
+    if (_isRefreshing && _refreshFuture != null) {
+      return await _refreshFuture!;
+    }
+    _isRefreshing = true;
+    _refreshFuture = _doRefreshToken();
+    final result = await _refreshFuture!;
+    _isRefreshing = false;
+    _refreshFuture = null;
+    return result;
+  }
+
+  Future<bool> _doRefreshToken() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final rToken = prefs.getString('refreshToken');
@@ -224,6 +242,16 @@ class Authcontroller extends GetxController {
       if (response.statusCode == 200) {
         registeredEmail.value = email.trim(); // store email in case OTP verification is needed next
         await extractAndSaveTokens(response.body);
+        
+        if (Get.isRegistered<ProfileController>()) Get.find<ProfileController>().fetchProfileData();
+        if (Get.isRegistered<HomeController>()) {
+           final homeCtrl = Get.find<HomeController>();
+           homeCtrl.fetchNearbyEvents();
+           homeCtrl.fetchUpcomingEvents();
+           homeCtrl.fetchMyEvents();
+           homeCtrl.fetchJoinedEvents();
+        }
+
         Get.snackbar('Success', 'Logged in successfully.');
         return true;
       } else {
@@ -267,6 +295,16 @@ class Authcontroller extends GetxController {
 
       if (response.statusCode == 200) {
         await extractAndSaveTokens(response.body);
+        
+        if (Get.isRegistered<ProfileController>()) Get.find<ProfileController>().fetchProfileData();
+        if (Get.isRegistered<HomeController>()) {
+           final homeCtrl = Get.find<HomeController>();
+           homeCtrl.fetchNearbyEvents();
+           homeCtrl.fetchUpcomingEvents();
+           homeCtrl.fetchMyEvents();
+           homeCtrl.fetchJoinedEvents();
+        }
+
         Get.snackbar('Success', 'Email verified successfully. You are now logged in.');
         return true;
       } else {
@@ -520,6 +558,45 @@ class Authcontroller extends GetxController {
       }
     } catch (e) {
       Get.snackbar('Error', 'Delete Account Exception: $e');
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Change Password API Call
+  Future<bool> changePassword(String currentPassword, String newPassword) async {
+    try {
+      isLoading.value = true;
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      if (token == null) {
+         Get.snackbar('Error', 'Not logged in.');
+         return false;
+      }
+
+      final response = await GetConnect().post(
+        Apiservices.authChangePassword,
+        {
+          "currentPassword": currentPassword,
+          "newPassword": newPassword
+        },
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        }
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.snackbar('Success', 'Password changed successfully', backgroundColor: Colors.green, colorText: Colors.white);
+        return true;
+      } else {
+        Get.snackbar('Error', response.body?['message'] ?? 'Incorrect current password or validation failed', backgroundColor: Colors.red, colorText: Colors.white);
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Network error', backgroundColor: Colors.red, colorText: Colors.white);
       return false;
     } finally {
       isLoading.value = false;

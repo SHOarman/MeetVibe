@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 
 class ChatMessage {
   final String senderName;
@@ -18,6 +20,7 @@ class ChatMessage {
 }
 
 class ConnectionRequest {
+  final String id;
   final String name;
   final String meetupName;
   final int mutualConnections;
@@ -25,6 +28,7 @@ class ConnectionRequest {
   final String avatarPath;
 
   ConnectionRequest({
+    required this.id,
     required this.name,
     required this.meetupName,
     required this.mutualConnections,
@@ -36,6 +40,56 @@ class ConnectionRequest {
 class MsgController extends GetxController {
   // Tab Management
   final RxInt selectedTabIndex = 0.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchPendingConnections();
+  }
+
+  Future<void> fetchPendingConnections() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+      if (token == null) return;
+      
+      final String url = "${Apiservices.baseUrl}/connection/pending".replaceAll(RegExp(r'/{2,}'), '/').replaceFirst(':/', '://'); 
+      // replaceAll is just to prevent double slashes before api
+
+      final response = await GetConnect().get(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        }
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.body['data'];
+        if (data != null && data['requests'] != null) {
+          final List requests = data['requests'];
+          connectionRequests.clear();
+          for (var req in requests) {
+             final user = req['requester'] ?? req['user'] ?? req['from'] ?? {};
+             final String image = user['image'] ?? user['profileImage'] ?? '';
+             
+             connectionRequests.add(
+               ConnectionRequest(
+                 id: req['id'] ?? req['_id'] ?? '',
+                 name: user['name'] ?? user['username'] ?? 'Unknown User',
+                 meetupName: "Vibe Connection", // Dynamic value based on API if present
+                 mutualConnections: 0,
+                 timeAgo: "Recently", 
+                 avatarPath: image.isNotEmpty ? Apiservices.fixImageUrl(image) : 'assets/image/Avatar (1).png',
+               )
+             );
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching connection requests: $e");
+    }
+  }
 
   // Active Chats Lists (All)
   final RxList<Map<String, dynamic>> allChats = <Map<String, dynamic>>[
@@ -156,29 +210,7 @@ class MsgController extends GetxController {
   ].obs;
 
   // Connection Requests
-  final RxList<ConnectionRequest> connectionRequests = <ConnectionRequest>[
-    ConnectionRequest(
-      name: "Helene Engels",
-      meetupName: "Coffee Networking Meetup",
-      mutualConnections: 3,
-      timeAgo: "8h",
-      avatarPath: "assets/image/Avatar (2).png",
-    ),
-    ConnectionRequest(
-      name: "Alex Mercer",
-      meetupName: "Tech Startup Summit",
-      mutualConnections: 5,
-      timeAgo: "12h",
-      avatarPath: "assets/image/Avatar (1).png",
-    ),
-    ConnectionRequest(
-      name: "Sophia Vance",
-      meetupName: "Design Portfolio Review",
-      mutualConnections: 2,
-      timeAgo: "1d",
-      avatarPath: "assets/image/Avatar (3).png",
-    ),
-  ].obs;
+  final RxList<ConnectionRequest> connectionRequests = <ConnectionRequest>[].obs;
 
   // Inbox Chat Messages (Coffee Networking Meetup)
   final RxList<ChatMessage> inboxMessages = <ChatMessage>[
@@ -200,26 +232,47 @@ class MsgController extends GetxController {
   // Text controller for inbox input
   final TextEditingController inputController = TextEditingController();
 
+  Future<void> respondToRequest(ConnectionRequest request, String action) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+      if (token == null) return;
+
+      final response = await GetConnect().post(
+        Apiservices.connectionRespond,
+        {
+          "connectionId": request.id,
+          "action": action
+        },
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        }
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        connectionRequests.remove(request);
+        Get.snackbar(
+          action == 'ACCEPTED' ? "Request Accepted" : "Request Ignored",
+          action == 'ACCEPTED' ? "You are now connected with ${request.name}" : "Ignored connection request from ${request.name}",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: action == 'ACCEPTED' ? const Color(0xFF10B981) : const Color(0xFF374151),
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar("Error", response.body?['message'] ?? "Action failed", backgroundColor: Colors.red, colorText: Colors.white);
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Network connection failed", backgroundColor: Colors.red, colorText: Colors.white);
+    }
+  }
+
   void acceptRequest(ConnectionRequest request) {
-    connectionRequests.remove(request);
-    Get.snackbar(
-      "Request Accepted",
-      "You are now connected with ${request.name}",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFF10B981),
-      colorText: Colors.white,
-    );
+    respondToRequest(request, "ACCEPTED");
   }
 
   void ignoreRequest(ConnectionRequest request) {
-    connectionRequests.remove(request);
-    Get.snackbar(
-      "Request Ignored",
-      "Ignored connection request from ${request.name}",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFF374151),
-      colorText: Colors.white,
-    );
+    respondToRequest(request, "REJECTED");
   }
 
   void sendInboxMessage() {

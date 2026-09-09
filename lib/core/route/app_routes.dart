@@ -41,6 +41,10 @@ static const String change_yourpassword='/change_yourpassword';
 static const String msgInbox = '/msgInbox';
 static const String subscription = '/subscription';
   static const String myEvents = '/myEvents';
+  static const String faqs = '/faqs';
+  static const String privacyPolicy = '/privacyPolicy';
+  static const String terms = '/terms';
+  static const String reportProblem = '/reportProblem';
   static const String manageEvent = '/manageEvent';
 
 }

@@ -40,12 +40,25 @@ class EventMessageCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Cover Image
-            Image.asset(
-              imagePath,
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            imagePath.startsWith('http')
+                ? Image.network(
+                    imagePath,
+                    height: 100,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, tr) => Container(
+                      height: 100,
+                      width: double.infinity,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                    ),
+                  )
+                : Image.asset(
+                    imagePath,
+                    height: 100,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
             // Details
             Padding(
               padding: const EdgeInsets.all(12.0),

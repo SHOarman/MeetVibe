@@ -2,15 +2,226 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:meetvibe/presention/message/message_controller/msgcontroller.dart';
+import 'package:meetvibe/presention/event/event_controller/event_host_controller.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
+import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart' as prof;
 
 class MsgInbox extends StatelessWidget {
   const MsgInbox({super.key});
+
+  void _showParticipantsSheet(BuildContext context, String eventId) {
+    final eventHostController = Get.isRegistered<EventHostController>() 
+        ? Get.find<EventHostController>() 
+        : Get.put(EventHostController());
+    final msgController = Get.find<MsgController>();
+    final profileController = Get.isRegistered<prof.ProfileController>() ? Get.find<prof.ProfileController>() : Get.put(prof.ProfileController());
+
+    eventHostController.getEventParticipants(eventId);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Text("Send Connection Request", style: AppTextStyle.outfit(size: 16, weight: FontWeight.bold, color: Colors.black)),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Obx(() {
+                    if (eventHostController.isLoadingPending.value) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    
+                    final currentUserId = profileController.userId.value;
+                    final hostData = eventHostController.hostData;
+                    final hostId = hostData['id'] ?? hostData['_id'] ?? '';
+                    
+                    List<dynamic> allMembers = List.from(eventHostController.allParticipants);
+                    bool hostExists = allMembers.any((p) {
+                      final u = p['user'] ?? {};
+                      return (u['id'] ?? u['_id']) == hostId;
+                    });
+                    
+                    if (!hostExists && hostId.isNotEmpty) {
+                       allMembers.insert(0, {
+                         'user': hostData,
+                         'isHost': true,
+                       });
+                    }
+                    
+                    for (var p in allMembers) {
+                       final u = p['user'] ?? {};
+                       if ((u['id'] ?? u['_id']) == hostId) {
+                           p['isHost'] = true;
+                       }
+                    }
+
+                    final participants = allMembers
+                        .where((p) => (p['user']?['id'] ?? p['user']?['_id']) != currentUserId)
+                        .toList();
+
+                    if (participants.isEmpty) {
+                      return const Center(child: Text("No other members available."));
+                    }
+                    return ListView.separated(
+                      controller: scrollController,
+                      itemCount: participants.length,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      separatorBuilder: (context, index) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final participant = participants[index];
+                        final user = participant['user'] ?? {};
+                        final userId = user['id'] ?? user['_id'] ?? '';
+                        final userName = user['name'] ?? 'Unknown User';
+                        final image = user['image'] ?? user['profileImage'];
+                        final bool isHost = participant['isHost'] == true;
+                        
+                        // We use a local state builder for the button to immediately reflect "Request Sent" after tap
+                        return StatefulBuilder(
+                          builder: (context, setState) {
+                            String connStatus = participant['connectionStatus'] ?? user['connectionStatus'] ?? 'NONE';
+                            bool isLoadingRequest = false;
+
+                            Widget buildActionButton() {
+                              if (connStatus == 'CONNECTED' || connStatus == 'ACCEPTED' || connStatus == 'ADDED') {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
+                                  child: const Text("Connected", style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                );
+                              } else if (connStatus == 'PENDING') {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
+                                  child: const Text("Request Connect", style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                );
+                              }
+
+                              return TextButton(
+                                onPressed: isLoadingRequest ? null : () async {
+                                  setState(() => isLoadingRequest = true);
+                                  try {
+                                    final prefs = await SharedPreferences.getInstance();
+                                    final token = prefs.getString('accessToken');
+                                    final response = await GetConnect().post(
+                                      Apiservices.connectionRequest,
+                                      {
+                                        "receiverId": userId,
+                                        "requestMessage": "Hey! Let's connect!"
+                                      },
+                                      headers: {
+                                        'Accept': 'application/json',
+                                        if (token != null) 'Authorization': 'Bearer $token',
+                                      }
+                                    );
+                                    if (response.statusCode == 200 || response.statusCode == 201) {
+                                      setState(() => connStatus = 'PENDING');
+                                      Get.snackbar("Success", "Request sent to $userName!", backgroundColor: Colors.green, colorText: Colors.white);
+                                    } else {
+                                      final errorMsg = response.body?['message']?.toString() ?? "Could not send request.";
+                                      if (errorMsg.toUpperCase().contains('PENDING')) {
+                                        setState(() => connStatus = 'PENDING');
+                                      } else if (errorMsg.toUpperCase().contains('ACCEPTED') || errorMsg.toUpperCase().contains('CONNECTED')) {
+                                        setState(() => connStatus = 'CONNECTED');
+                                      } else {
+                                        Get.snackbar("Error", errorMsg, backgroundColor: Colors.red, colorText: Colors.white);
+                                      }
+                                    }
+                                  } catch (e) {
+                                    Get.snackbar("Error", "Network error.", backgroundColor: Colors.red, colorText: Colors.white);
+                                  } finally {
+                                    setState(() => isLoadingRequest = false);
+                                  }
+                                },
+                                style: TextButton.styleFrom(
+                                  backgroundColor: const Color(0xFFEC6D43),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  minimumSize: const Size(60, 30),
+                                ),
+                                child: isLoadingRequest 
+                                   ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                   : const Text("Send Connect", style: TextStyle(color: Colors.white, fontSize: 12)),
+                              );
+                            }
+
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: ClipOval(
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  color: Colors.grey.shade300,
+                                  child: image != null && image.isNotEmpty 
+                                      ? Image.network(
+                                          Apiservices.fixImageUrl(image),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (ctx, err, tr) => Image.asset('assets/image/Avatar (1).png', fit: BoxFit.cover),
+                                        )
+                                      : Image.asset('assets/image/Avatar (1).png', fit: BoxFit.cover),
+                                ),
+                              ),
+                              title: Row(
+                                children: [
+                                  Flexible(child: Text(userName, style: AppTextStyle.outfit(size: 14, weight: FontWeight.w600, color: Colors.black), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                  if (isHost) ...[
+                                     const SizedBox(width: 6),
+                                     Container(
+                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                       decoration: BoxDecoration(color: const Color(0xFFEC6D43).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+                                       child: const Text("Host", style: TextStyle(color: Color(0xFFEC6D43), fontSize: 10, fontWeight: FontWeight.bold)),
+                                     )
+                                  ]
+                                ],
+                              ),
+                              trailing: buildActionButton(),
+                            );
+                          }
+                        );
+                      },
+                    );
+                  }),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     const peachBg = Color(0xFFFFF9F5);
     const orangeCol = Color(0xFFEC6D43);
     final MsgController controller = Get.find<MsgController>();
+    
+    final args = Get.arguments as Map<String, dynamic>?;
+    final String eventId = args?['eventId'] ?? '';
+    final String title = args?['title'] ?? 'Event Chat';
+    final int capacity = args?['capacity'] ?? 0;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -25,15 +236,17 @@ class MsgInbox extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Coffee Networking Meetup",
+              title,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF0C0A09),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
-              "124 member",
+              "$capacity members",
               style: GoogleFonts.poppins(
                 fontSize: 11,
                 fontWeight: FontWeight.w400,
@@ -46,25 +259,32 @@ class MsgInbox extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0x1D000000)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.grid_view_rounded,
-                  color: orangeCol,
-                  size: 18,
+              child: GestureDetector(
+                onTap: () {
+                  if (eventId.isNotEmpty) {
+                    _showParticipantsSheet(context, eventId);
+                  }
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0x1D000000)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.grid_view_rounded,
+                    color: orangeCol,
+                    size: 18,
+                  ),
                 ),
               ),
             ),

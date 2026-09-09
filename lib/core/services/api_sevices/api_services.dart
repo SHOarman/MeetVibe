@@ -1,7 +1,7 @@
 class Apiservices {
   Apiservices._();
 
-  static const String baseUrl = "https://garmin-diagnosis-unexpected-bestsellers.trycloudflare.com/api/v1";
+  static const String baseUrl = "https://britain-lenders-boundary-coupon.trycloudflare.com/api/v1";
 
   //========================================================Chat=======================================
   static const String chatConversations = "$baseUrl/chat/conversations";
@@ -46,6 +46,7 @@ class Apiservices {
   static const String eventMine = "$baseUrl/event/mine";
   static String eventDetails(String id) => "$baseUrl/event/$id";
   static String eventDelete(String id) => "$baseUrl/event/$id";
+  static String eventParticipants(String id) => "$baseUrl/event/$id/participants";
 
   //========================================================Authentication=======================================
   static const String authRegister = "$baseUrl/auth/register";
@@ -56,6 +57,7 @@ class Apiservices {
   static const String authLogout = "$baseUrl/auth/logout";
   static const String authForgotPassword = "$baseUrl/auth/forgot-password";
   static const String authResetPassword = "$baseUrl/auth/reset-password";
+  static const String authChangePassword = "$baseUrl/auth/change-password";
   static const String authMfaLogin = "$baseUrl/auth/mfa/login";
   static const String authMfaSetup = "$baseUrl/auth/mfa/setup";
   static const String authMfaVerify = "$baseUrl/auth/mfa/verify";
@@ -69,13 +71,19 @@ class Apiservices {
 
   //========================================================UserProfile=======================================
   static const String userProfile = "$baseUrl/user/profile";
+  static const String userProfileImage = "$baseUrl/user/profile-image";
   static const String userVerifyIdentity = "$baseUrl/user/verify-identity";
   static const String userMockVerifyIdentity = "$baseUrl/user/mock-verify-identity";
   static const String userStripeConnectOnboard = "$baseUrl/user/stripe-connect/onboard";
   static const String userStripeConnectStatus = "$baseUrl/user/stripe-connect/status";
-  static const String userAccountDelete = "$baseUrl/user/account";
+  static const String userAccountDelete = "$baseUrl/settings/account";
   static const String get_category="$baseUrl/event/categories";
   
+  //========================================================Settings=======================================
+  static const String settingsFaqs = "$baseUrl/settings/faqs";
+  static const String settingsPrivacyPolicy = "$baseUrl/settings/privacy-policy";
+  static const String settingsTerms = "$baseUrl/settings/terms";
+  static const String settingsReportProblem = "$baseUrl/settings/report-problem";
   static String fixImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     try {

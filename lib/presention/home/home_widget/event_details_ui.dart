@@ -166,12 +166,16 @@ class EventDetailsUi extends StatelessWidget {
                                 color: Colors.white,
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                "$displayDate - $displayTime",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
+                              Expanded(
+                                child: Text(
+                                  "$displayDate - $displayTime",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -186,12 +190,16 @@ class EventDetailsUi extends StatelessWidget {
                                 color: Colors.white,
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                location,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
+                              Expanded(
+                                child: Text(
+                                  location,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -276,12 +284,16 @@ class EventDetailsUi extends StatelessWidget {
                               color: Colors.grey[600],
                             ),
                             const SizedBox(width: 12),
-                            Text(
-                              displayDate,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF2A2A2A),
+                            Expanded(
+                              child: Text(
+                                displayDate,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF2A2A2A),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -296,12 +308,16 @@ class EventDetailsUi extends StatelessWidget {
                               color: Colors.grey[600],
                             ),
                             const SizedBox(width: 12),
-                            Text(
-                              displayTime,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF2A2A2A),
+                            Expanded(
+                              child: Text(
+                                displayTime,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF2A2A2A),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -316,12 +332,16 @@ class EventDetailsUi extends StatelessWidget {
                               color: Colors.grey[600],
                             ),
                             const SizedBox(width: 12),
-                            Text(
-                              location,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF2A2A2A),
+                            Expanded(
+                              child: Text(
+                                location,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF2A2A2A),
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],

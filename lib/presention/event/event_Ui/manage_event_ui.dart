@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:meetvibe/presention/event/event_controller/event_host_controller.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 
 class ManageEventUi extends StatefulWidget {
@@ -24,7 +25,7 @@ class _ManageEventUiState extends State<ManageEventUi> {
     event = Get.arguments as Map<String, dynamic>?;
     eventId = event?['id'] ?? event?['_id'];
     if (eventId != null) {
-      eventHostController.getPendingPayments(eventId!);
+      eventHostController.getEventParticipants(eventId!);
     }
   }
 
@@ -50,7 +51,7 @@ class _ManageEventUiState extends State<ManageEventUi> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final pending = eventHostController.pendingParticipants;
+        final participants = eventHostController.allParticipants;
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -58,11 +59,11 @@ class _ManageEventUiState extends State<ManageEventUi> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Pending Payments",
+                "Event Participants",
                 style: AppTextStyle.outfit(size: 16, weight: FontWeight.bold, color: Colors.black),
               ),
               const SizedBox(height: 10),
-              if (pending.isEmpty)
+              if (participants.isEmpty)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -72,7 +73,7 @@ class _ManageEventUiState extends State<ManageEventUi> {
                     border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: Text(
-                    "No pending offline payments at the moment.",
+                    "No participants have joined yet.",
                     style: AppTextStyle.outfit(size: 14, weight: FontWeight.w400, color: Colors.grey.shade600),
                     textAlign: TextAlign.center,
                   ),
@@ -81,13 +82,15 @@ class _ManageEventUiState extends State<ManageEventUi> {
                 ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: pending.length,
+                  itemCount: participants.length,
                   separatorBuilder: (context, index) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    final participant = pending[index];
+                    final participant = participants[index];
                     final participantId = participant['id'] ?? participant['_id'];
                     final user = participant['user'] ?? {};
                     final userName = user['name'] ?? 'Unknown User';
+                    final image = user['image'] ?? user['profileImage'];
+                    final payStatus = participant['paymentStatus'] ?? participant['status'];
 
                     return Container(
                       padding: const EdgeInsets.all(15),
@@ -100,27 +103,39 @@ class _ManageEventUiState extends State<ManageEventUi> {
                         children: [
                           CircleAvatar(
                             backgroundColor: Colors.grey.shade300,
-                            child: const Icon(Icons.person, color: Colors.white), // Use user['profileImage'] if available
+                            backgroundImage: image != null && image.isNotEmpty 
+                                ? NetworkImage(Apiservices.fixImageUrl(image)) as ImageProvider
+                                : const AssetImage('assets/image/Avatar (1).png'),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Text(
-                              userName,
-                              style: AppTextStyle.outfit(size: 14, weight: FontWeight.w600, color: Colors.black),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userName,
+                                  style: AppTextStyle.outfit(size: 14, weight: FontWeight.w600, color: Colors.black),
+                                ),
+                                Text(
+                                  "Status: $payStatus",
+                                  style: AppTextStyle.outfit(size: 12, weight: FontWeight.w400, color: Colors.grey.shade600),
+                                ),
+                              ],
                             ),
                           ),
-                          TextButton(
-                            onPressed: () async {
-                              final success = await eventHostController.reviewPayment(participantId, "APPROVED");
-                              if (success) {
-                                Get.snackbar("Success", "$userName's payment approved.", backgroundColor: Colors.green, colorText: Colors.white);
-                              } else {
-                                Get.snackbar("Error", "Could not approve payment.", backgroundColor: Colors.red, colorText: Colors.white);
-                              }
-                            },
-                            style: TextButton.styleFrom(backgroundColor: const Color(0xFFEC6D43), padding: const EdgeInsets.symmetric(horizontal: 10)),
-                            child: const Text("Approve", style: TextStyle(color: Colors.white, fontSize: 12)),
-                          ),
+                          if (payStatus == 'PENDING_PAYMENT')
+                            TextButton(
+                              onPressed: () async {
+                                final success = await eventHostController.reviewPayment(participantId, "APPROVED");
+                                if (success) {
+                                  Get.snackbar("Success", "$userName's payment approved.", backgroundColor: Colors.green, colorText: Colors.white);
+                                } else {
+                                  Get.snackbar("Error", "Could not approve payment.", backgroundColor: Colors.red, colorText: Colors.white);
+                                }
+                              },
+                              style: TextButton.styleFrom(backgroundColor: const Color(0xFFEC6D43), padding: const EdgeInsets.symmetric(horizontal: 10)),
+                              child: const Text("Approve", style: TextStyle(color: Colors.white, fontSize: 12)),
+                            ),
                         ],
                       ),
                     );

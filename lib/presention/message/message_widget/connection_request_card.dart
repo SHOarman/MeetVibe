@@ -31,8 +31,9 @@ class ConnectionRequestCard extends StatelessWidget {
           // Profile Avatar
           CircleAvatar(
             radius: 26,
-
-            backgroundImage: AssetImage(avatarPath),
+            backgroundImage: avatarPath.startsWith('http')
+                ? NetworkImage(avatarPath) as ImageProvider
+                : AssetImage(avatarPath),
           ),
           const SizedBox(width: 12),
           // Details Column

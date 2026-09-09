@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -122,24 +124,64 @@ class ProfileController extends GetxController {
       if (gender != null && gender.isNotEmpty) body["gender"] = gender;
       if (address != null && address.isNotEmpty) body["address"] = address;
 
-      final currentImage = newImage ?? image.value;
-      if (currentImage != null && currentImage.trim().isNotEmpty) {
-        body["image"] = currentImage;
-        body["profileImage"] = currentImage;
-      }
+      dynamic requestBody;
+      Map<String, String> requestHeaders = {
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
 
-      final response = await GetConnect().put(
-        Apiservices.userProfile,
-        body,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+      if (localImagePath != null && localImagePath.isNotEmpty && !localImagePath.startsWith('http')) {
+        try {
+          File file = File(localImagePath);
+          List<int> imageBytes = await file.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          String ext = localImagePath.split('.').last.toLowerCase();
+          if (ext != 'png' && ext != 'gif' && ext != 'webp') ext = 'jpeg';
+          
+          String dataUri = 'data:image/$ext;base64,$base64Image';
+          body["image"] = dataUri;
+          body["profileImage"] = dataUri;
+        } catch (e) {
+          print("Error converting image to base64: $e");
         }
+      } else {
+        final currentImage = newImage ?? image.value;
+        if (currentImage != null && currentImage.trim().isNotEmpty) {
+          if (!body.containsKey("image")) body["image"] = currentImage;
+          if (!body.containsKey("profileImage")) body["profileImage"] = currentImage;
+        }
+      }
+      
+      requestBody = body;
+      requestHeaders['Content-Type'] = 'application/json';
+
+      // --- Debug Print Request Body --- 
+      print("====== UPDATE PROFILE REQUEST ======");
+      print("Endpoint: ${Apiservices.userProfile}");
+      
+      final Map<String, dynamic> debugBody = Map.from(body);
+      if (debugBody['image'] != null && debugBody['image'].toString().length > 100) {
+        debugBody['image'] = "${debugBody['image'].toString().substring(0, 50)}... [BASE64 TRUNCATED]";
+      }
+      if (debugBody['profileImage'] != null && debugBody['profileImage'].toString().length > 100) {
+        debugBody['profileImage'] = "${debugBody['profileImage'].toString().substring(0, 50)}... [BASE64 TRUNCATED]";
+      }
+      print("Body:\\n${const JsonEncoder.withIndent('  ').convert(debugBody)}");
+      print("====================================");
+
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+
+      final response = await getConnect.put(
+        Apiservices.userProfile,
+        requestBody,
+        headers: requestHeaders,
       );
 
-      print("Update Profile Status: ${response.statusCode}");
-      print("Update Profile Body: ${response.body}");
+      print("====== UPDATE PROFILE RESPONSE ======");
+      print("Status: ${response.statusCode}");
+      print("Body: ${response.body}");
+      print("=====================================");
 
       if (response.statusCode == 200) {
         // Fetch fresh data immediately to reflect on all UIs
@@ -154,6 +196,47 @@ class ProfileController extends GetxController {
       return false;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> updateUserLocation(double lat, double lng, {bool setAsHome = true, bool isRetry = false}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+      if (token == null) return;
+
+      final String url = Apiservices.baseUrl.endsWith('/')
+          ? '${Apiservices.baseUrl}user/location'
+          : '${Apiservices.baseUrl}/user/location';
+
+      print("Updating backend user location: $lat, $lng");
+      final response = await GetConnect().put(
+        url,
+        {
+          "lat": lat,
+          "lng": lng,
+          "setAsHome": setAsHome
+        },
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }
+      );
+
+      print("Location Update API Status: ${response.statusCode}");
+      print("Location Update API Body: ${response.body}");
+
+      if (response.statusCode == 401 && !isRetry) {
+        print("Location Update 401: Refreshing token...");
+        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+        final refreshed = await authController.refreshTokenAPI();
+        if (refreshed) {
+           await updateUserLocation(lat, lng, setAsHome: setAsHome, isRetry: true);
+        }
+      }
+    } catch (e) {
+      print("Location Update Error: $e");
     }
   }
 }

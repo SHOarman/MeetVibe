@@ -9,9 +9,9 @@ import 'package:meetvibe/presention/event/event_controller/event_host_controller
 
 class DependencyInjection {
   static void bindings() {
-    Get.lazyPut(() => Authcontroller(), fenix: true);
-    Get.lazyPut(()=>MsgController(), fenix: true);
-    Get.lazyPut(()=>ProfileController(), fenix: true);
+    Get.put(Authcontroller(), permanent: true);
+    Get.put(MsgController(), permanent: true);
+    Get.put(ProfileController(), permanent: true);
 
     //=============================================create event================================================
     Get.lazyPut(() => CreateController(), fenix: true);

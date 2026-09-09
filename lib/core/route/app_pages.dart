@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart' hide Notification;
 import 'package:get/get.dart';
 import 'package:meetvibe/core/route/app_routes.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 import 'package:meetvibe/presention/home/home_ui/home_ui.dart';
 import 'package:meetvibe/presention/onlodingscreen/onloding2.dart';
 import 'package:meetvibe/presention/onlodingscreen/onloding3.dart';
@@ -28,6 +29,9 @@ import 'package:meetvibe/presention/home/home_ui/nearbyall.dart';
 import 'package:meetvibe/presention/home/home_ui/upcaminall.dart';
 import 'package:meetvibe/presention/profile/profile_ui/security.dart';
 import 'package:meetvibe/presention/profile/profile_ui/support_Help.dart';
+import 'package:meetvibe/presention/profile/profile_ui/faqs_ui.dart';
+import 'package:meetvibe/presention/profile/profile_ui/info_doc_ui.dart';
+import 'package:meetvibe/presention/profile/profile_ui/report_problem_ui.dart';
 import 'package:meetvibe/presention/notification/notification.dart';
 import 'package:meetvibe/presention/message/message_ui/msg_inbox.dart';
 import 'package:meetvibe/presention/profile/profile_ui/subscription.dart';
@@ -78,6 +82,24 @@ class AppPages {
     GetPage(name: AppRoutes.msgInbox, page: () => const MsgInbox()),
     GetPage(name: AppRoutes.subscription, page: () => const SubscriptionUi()),
     GetPage(name: AppRoutes.myEvents, page: () => const MyEventsUi()),
+    GetPage(name: AppRoutes.faqs, page: () => const FaqsUi()),
+    GetPage(
+      name: AppRoutes.privacyPolicy,
+      page: () => const InfoDocUi(
+        pageTitle: "Privacy Policy",
+        apiUrl: Apiservices.settingsPrivacyPolicy,
+        dataKey: "privacyPolicy",
+      ),
+    ),
+    GetPage(
+      name: AppRoutes.terms,
+      page: () => const InfoDocUi(
+        pageTitle: "Terms & Conditions",
+        apiUrl: Apiservices.settingsTerms,
+        dataKey: "terms",
+      ),
+    ),
+    GetPage(name: AppRoutes.reportProblem, page: () => const ReportProblemUi()),
     GetPage(name: AppRoutes.manageEvent, page: () => const ManageEventUi()),
   ];
 }

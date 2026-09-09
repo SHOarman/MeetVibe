@@ -223,7 +223,7 @@ class UpcomingEventCard extends StatelessWidget {
                       ],
                     ),
                     EventButton(
-                      text: isJoined ? 'Joined' : (isFree ? 'Join Event' : 'Pay'),
+                      text: isJoined ? 'Joined' : 'Join Event',
                       width: double.infinity,
                       onTap: onJoinTap,
                     ),

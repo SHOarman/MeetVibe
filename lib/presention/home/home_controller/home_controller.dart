@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart' as meet;
+import 'package:meetvibe/presention/auth/auth_controller/authcontroller.dart';
 
 class HomeController extends GetxController {
   final RxBool isLoadingNearby = false.obs;
@@ -23,14 +25,14 @@ class HomeController extends GetxController {
     fetchJoinedEvents();
   }
 
-  Future<void> fetchJoinedEvents() async {
+  Future<void> fetchJoinedEvents({bool isRetry = false}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
       if (token == null) return;
 
       final response = await GetConnect().get(
-        '${Apiservices.baseUrl}event/joined?when=all',
+        '${Apiservices.baseUrl}/event/joined?when=all',
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
@@ -46,16 +48,22 @@ class HomeController extends GetxController {
             joinedEventIds.add(e['id'] ?? e['_id'] ?? '');
           }
         }
+      } else if (response.statusCode == 401 && !isRetry) {
+        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+        final refreshed = await authController.refreshTokenAPI();
+        if (refreshed) {
+           await fetchJoinedEvents(isRetry: true);
+        }
       }
     } catch (e) {
       print('Error fetching joined events: $e');
     }
   }
 
-  Future<void> fetchNearbyEvents() async {
+  Future<void> fetchNearbyEvents({bool isRetry = false}) async {
     print("====== FETCH NEARBY EVENTS CALLED ======");
     try {
-      isLoadingNearby.value = true;
+      if (!isRetry) isLoadingNearby.value = true;
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
 
@@ -99,6 +107,18 @@ class HomeController extends GetxController {
               print("Latitude : ${position.latitude}");
               print("Longitude: ${position.longitude}");
               print("===================================");
+              
+              // Automatically update backend so the profile reflects the current location
+              try {
+                final profileController = Get.isRegistered<meet.ProfileController>() 
+                    ? Get.find<meet.ProfileController>() 
+                    : Get.put(meet.ProfileController());
+                // We run this async so it doesn't block the nearby events load
+                profileController.updateUserLocation(position.latitude, position.longitude, setAsHome: true);
+              } catch (e) {
+                print("Failed calling ProfileController: $e");
+              }
+
               apiUrl = "${Apiservices.eventSuggestions}?lat=${position.latitude}&lng=${position.longitude}&radiusKm=25&includeOnline=true";
               print("Fetching Nearby Events with URL: $apiUrl");
             } else {
@@ -122,20 +142,26 @@ class HomeController extends GetxController {
 
       if (response.statusCode == 200) {
         final data = response.body['data'];
-        if (data != null && data['events'] != null) {
-          nearbyEvents.value = List.from(data['events']);
+        if (data != null && data['nearby'] != null) {
+          nearbyEvents.value = List.from(data['nearby']);
+        }
+      } else if (response.statusCode == 401 && !isRetry) {
+        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+        final refreshed = await authController.refreshTokenAPI();
+        if (refreshed) {
+           await fetchNearbyEvents(isRetry: true);
         }
       }
     } catch (e) {
       print('Error fetching nearby events: $e');
     } finally {
-      isLoadingNearby.value = false;
+      if (!isRetry) isLoadingNearby.value = false;
     }
   }
 
-  Future<void> fetchUpcomingEvents() async {
+  Future<void> fetchUpcomingEvents({bool isRetry = false}) async {
     try {
-      isLoadingUpcoming.value = true;
+      if (!isRetry) isLoadingUpcoming.value = true;
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
 
@@ -152,17 +178,23 @@ class HomeController extends GetxController {
         if (data != null && data['events'] != null) {
           upcomingEvents.value = List.from(data['events']);
         }
+      } else if (response.statusCode == 401 && !isRetry) {
+        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+        final refreshed = await authController.refreshTokenAPI();
+        if (refreshed) {
+           await fetchUpcomingEvents(isRetry: true);
+        }
       }
     } catch (e) {
       print('Error fetching upcoming events: $e');
     } finally {
-      isLoadingUpcoming.value = false;
+      if (!isRetry) isLoadingUpcoming.value = false;
     }
   }
 
-  Future<void> fetchMyEvents() async {
+  Future<void> fetchMyEvents({bool isRetry = false}) async {
     try {
-      isLoadingMyEvents.value = true;
+      if (!isRetry) isLoadingMyEvents.value = true;
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
 
@@ -179,11 +211,17 @@ class HomeController extends GetxController {
         if (data != null && data['events'] != null) {
           myEvents.value = List.from(data['events']);
         }
+      } else if (response.statusCode == 401 && !isRetry) {
+        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+        final refreshed = await authController.refreshTokenAPI();
+        if (refreshed) {
+           await fetchMyEvents(isRetry: true);
+        }
       }
     } catch (e) {
       print('Error fetching my events: $e');
     } finally {
-      isLoadingMyEvents.value = false;
+      if (!isRetry) isLoadingMyEvents.value = false;
     }
   }
 

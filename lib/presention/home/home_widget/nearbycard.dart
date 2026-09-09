@@ -230,7 +230,7 @@ class NearbyEventCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   // Join Event Button (scaled to fit card width)
                   EventButton(
-                    text: isJoined ? 'Joined' : (isFree ? 'Join Event' : 'Pay'),
+                    text: isJoined ? 'Joined' : 'Join Event',
                     width: double.infinity,
                     onTap: onJoinTap,
                   ),

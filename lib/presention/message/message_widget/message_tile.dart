@@ -11,6 +11,8 @@ class CustomMessageTile extends StatelessWidget {
   final int unreadCount;
   final bool hasAttachment;
   final bool isVoice;
+  final bool isLastMessageFromMe;
+  final bool isLastMessageRead;
   final VoidCallback? onTap;
 
   const CustomMessageTile({
@@ -24,6 +26,8 @@ class CustomMessageTile extends StatelessWidget {
     this.unreadCount = 0,
     this.hasAttachment = false,
     this.isVoice = false,
+    this.isLastMessageFromMe = false,
+    this.isLastMessageRead = false,
     this.onTap,
   });
 
@@ -103,6 +107,13 @@ class CustomMessageTile extends StatelessWidget {
                           Icons.image,
                           size: 14,
                           color: Color(0xFF7E7E7E),
+                        ),
+                        const SizedBox(width: 4),
+                      ] else if (isLastMessageFromMe && !isTyping) ...[
+                        Icon(
+                          Icons.done_all,
+                          size: 16,
+                          color: isLastMessageRead ? const Color(0xFFF2703D) : const Color(0xFF9CA3AF),
                         ),
                         const SizedBox(width: 4),
                       ],

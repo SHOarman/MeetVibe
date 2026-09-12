@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:meetvibe/core/services/api_sevices/api_services.dart';
@@ -30,9 +31,10 @@ class EventJoinController extends GetxController {
 
       final response = await GetConnect().post(
         endpoint,
-        {"eventId": eventId},
+        jsonEncode({"eventId": eventId}),
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
@@ -75,12 +77,12 @@ class EventJoinController extends GetxController {
                 // Intercepted Success! Now call confirm-checkout API
                 if (sessionId != null) {
                    print("========== PAYMENT CONFIRMATION ==========");
-                   print("API URL: ${Apiservices.baseUrl}participation/confirm-checkout");
+                   print("API URL: ${Apiservices.baseUrl}/participation/confirm-checkout");
                    print("Payload: {\"sessionId\": \"$sessionId\"}");
                    
                    Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
                    final confirmResponse = await GetConnect().post(
-                     "${Apiservices.baseUrl}participation/confirm-checkout",
+                     "${Apiservices.baseUrl}/participation/confirm-checkout",
                      {"sessionId": sessionId},
                      headers: {
                        'Accept': 'application/json',

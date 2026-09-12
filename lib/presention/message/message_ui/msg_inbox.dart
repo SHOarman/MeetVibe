@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +9,7 @@ import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart' as prof;
+import 'package:meetvibe/presention/message/message_controller/group_chat_controller.dart';
 
 class MsgInbox extends StatelessWidget {
   const MsgInbox({super.key});
@@ -93,9 +95,14 @@ class MsgInbox extends StatelessWidget {
                       separatorBuilder: (context, index) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final participant = participants[index];
-                        final user = participant['user'] ?? {};
-                        final userId = user['id'] ?? user['_id'] ?? '';
-                        final userName = user['name'] ?? 'Unknown User';
+                        // Safely extract the target user object
+                        var user = participant;
+                        if (participant['user'] != null && participant['user'] is Map) {
+                           user = participant['user'];
+                        }
+                        
+                        final String userId = (user['id'] ?? user['_id'] ?? participant['userId'] ?? participant['receiverId'] ?? participant['id'] ?? participant['_id'] ?? '').toString();
+                        final String userName = (user['name'] ?? participant['name'] ?? 'Unknown User').toString();
                         final image = user['image'] ?? user['profileImage'];
                         final bool isHost = participant['isHost'] == true;
                         
@@ -104,8 +111,17 @@ class MsgInbox extends StatelessWidget {
                           builder: (context, setState) {
                             String connStatus = participant['connectionStatus'] ?? user['connectionStatus'] ?? 'NONE';
                             bool isLoadingRequest = false;
+                            String? errorStatus;
 
                             Widget buildActionButton() {
+                              if (errorStatus != null) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(6)),
+                                  child: Text(errorStatus!, style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                                );
+                              }
+                              
                               if (connStatus == 'CONNECTED' || connStatus == 'ACCEPTED' || connStatus == 'ADDED') {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -116,7 +132,7 @@ class MsgInbox extends StatelessWidget {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                   decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
-                                  child: const Text("Request Connect", style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                  child: const Text("Pending", style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
                                 );
                               }
 
@@ -126,19 +142,31 @@ class MsgInbox extends StatelessWidget {
                                   try {
                                     final prefs = await SharedPreferences.getInstance();
                                     final token = prefs.getString('accessToken');
+                                    final payload = {
+                                      "receiverId": userId,
+                                      "requestMessage": "Hey! Let's connect!"
+                                    };
+                                    print("--- SENDING CONNECTION REQUEST ---");
+                                    print("URL: ${Apiservices.connectionRequest}");
+                                    print("Payload: $payload");
+
                                     final response = await GetConnect().post(
                                       Apiservices.connectionRequest,
-                                      {
-                                        "receiverId": userId,
-                                        "requestMessage": "Hey! Let's connect!"
-                                      },
+                                      payload,
                                       headers: {
                                         'Accept': 'application/json',
                                         if (token != null) 'Authorization': 'Bearer $token',
                                       }
                                     );
+
+                                    print("--- CONNECTION REQUEST RESPONSE ---");
+                                    print("Code: ${response.statusCode}");
+                                    print("Body: ${response.body}");
                                     if (response.statusCode == 200 || response.statusCode == 201) {
                                       setState(() => connStatus = 'PENDING');
+                                      if (participant['user'] != null && participant['user'] is Map) {
+                                         participant['user']['connectionStatus'] = 'PENDING';
+                                      }
                                       Get.snackbar("Success", "Request sent to $userName!", backgroundColor: Colors.green, colorText: Colors.white);
                                     } else {
                                       final errorMsg = response.body?['message']?.toString() ?? "Could not send request.";
@@ -147,13 +175,19 @@ class MsgInbox extends StatelessWidget {
                                       } else if (errorMsg.toUpperCase().contains('ACCEPTED') || errorMsg.toUpperCase().contains('CONNECTED')) {
                                         setState(() => connStatus = 'CONNECTED');
                                       } else {
-                                        Get.snackbar("Error", errorMsg, backgroundColor: Colors.red, colorText: Colors.white);
+                                        setState(() => errorStatus = errorMsg);
+                                        Future.delayed(const Duration(seconds: 2), () {
+                                           if (context.mounted) setState(() => errorStatus = null);
+                                        });
                                       }
                                     }
                                   } catch (e) {
-                                    Get.snackbar("Error", "Network error.", backgroundColor: Colors.red, colorText: Colors.white);
+                                    setState(() => errorStatus = "Network Error");
+                                    Future.delayed(const Duration(seconds: 2), () {
+                                       if (context.mounted) setState(() => errorStatus = null);
+                                    });
                                   } finally {
-                                    setState(() => isLoadingRequest = false);
+                                    if (context.mounted) setState(() => isLoadingRequest = false);
                                   }
                                 },
                                 style: TextButton.styleFrom(
@@ -216,12 +250,25 @@ class MsgInbox extends StatelessWidget {
   Widget build(BuildContext context) {
     const peachBg = Color(0xFFFFF9F5);
     const orangeCol = Color(0xFFEC6D43);
-    final MsgController controller = Get.find<MsgController>();
     
+    final groupController = Get.isRegistered<GroupChatController>() ? Get.find<GroupChatController>() : Get.put(GroupChatController());
+    final profController = Get.isRegistered<prof.ProfileController>() ? Get.find<prof.ProfileController>() : Get.put(prof.ProfileController());
+    final eventHost = Get.isRegistered<EventHostController>() ? Get.find<EventHostController>() : Get.put(EventHostController());
+
     final args = Get.arguments as Map<String, dynamic>?;
     final String eventId = args?['eventId'] ?? '';
     final String title = args?['title'] ?? 'Event Chat';
     final int capacity = args?['capacity'] ?? 0;
+
+    // Fetch initial chat and participants when the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (eventId.isNotEmpty && groupController.messages.isEmpty && !groupController.isLoading.value) {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('accessToken') ?? '';
+        groupController.fetchGroupChat(eventId, token);
+        eventHost.getEventParticipants(eventId);
+      }
+    });
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -296,12 +343,27 @@ class MsgInbox extends StatelessWidget {
           // Chat Bubbles List
           Expanded(
             child: Obx(() {
+              if (groupController.isLoading.value && groupController.messages.isEmpty) {
+                 return const Center(child: CircularProgressIndicator());
+              }
+              if (groupController.messages.isEmpty) {
+                 return const Center(child: Text("No messages yet. Be the first to say hi!"));
+              }
+              
               return ListView.builder(
+                reverse: true, // Display latest at bottom by reversing list
                 padding: const EdgeInsets.all(16.0),
-                itemCount: controller.inboxMessages.length,
+                itemCount: groupController.messages.length,
                 itemBuilder: (context, index) {
-                  final msg = controller.inboxMessages[index];
-                  final bool isOutgoing = msg.isOutgoing;
+                  // We reverse the index since ListView is reversed
+                  final msg = groupController.messages[groupController.messages.length - 1 - index];
+                  final bool isOutgoing = msg.senderId == profController.userId.value;
+                  
+                  final hostId = eventHost.hostData['id'] ?? eventHost.hostData['_id'] ?? '';
+                  final bool isEventHost = msg.senderId.isNotEmpty && msg.senderId == hostId;
+
+                  final timeStr = "${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}";
+                  final avatarSource = msg.senderAvatar.isNotEmpty ? Apiservices.fixImageUrl(msg.senderAvatar) : null;
 
                   if (isOutgoing) {
                     // Outgoing Message (Micheal Gough)
@@ -329,16 +391,34 @@ class MsgInbox extends StatelessWidget {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        msg.senderName,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: const Color(0xFF0C0A09),
-                                        ),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            msg.senderName,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF0C0A09),
+                                            ),
+                                          ),
+                                          if (isEventHost) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEC6D43).withOpacity(0.15),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                "Host",
+                                                style: TextStyle(color: Color(0xFFEC6D43), fontSize: 9, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                       Text(
-                                        msg.time,
+                                        timeStr,
                                         style: GoogleFonts.poppins(
                                           fontSize: 11,
                                           color: const Color(0xFF9CA3AF),
@@ -363,7 +443,7 @@ class MsgInbox extends StatelessWidget {
                           CircleAvatar(
                             radius: 18,
                             backgroundColor: Colors.grey[200],
-                            backgroundImage: AssetImage(msg.avatarPath),
+                            backgroundImage: avatarSource != null ? NetworkImage(avatarSource) as ImageProvider : const AssetImage('assets/image/Avatar (2).png'),
                           ),
                         ],
                       ),
@@ -378,7 +458,7 @@ class MsgInbox extends StatelessWidget {
                           CircleAvatar(
                             radius: 18,
                             backgroundColor: Colors.grey[200],
-                            backgroundImage: AssetImage(msg.avatarPath),
+                            backgroundImage: avatarSource != null ? NetworkImage(avatarSource) as ImageProvider : const AssetImage('assets/image/Avatar (1).png'),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -399,16 +479,34 @@ class MsgInbox extends StatelessWidget {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        msg.senderName,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: const Color(0xFF0C0A09),
-                                        ),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            msg.senderName,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF0C0A09),
+                                            ),
+                                          ),
+                                          if (isEventHost) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEC6D43).withOpacity(0.15),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                "Host",
+                                                style: TextStyle(color: Color(0xFFEC6D43), fontSize: 9, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                       Text(
-                                        msg.time,
+                                        timeStr,
                                         style: GoogleFonts.poppins(
                                           fontSize: 11,
                                           color: const Color(0xFF9CA3AF),
@@ -464,7 +562,7 @@ class MsgInbox extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: TextField(
-                              controller: controller.inputController,
+                              controller: groupController.inputController,
                               decoration: InputDecoration(
                                 hintText: "Write message...",
                                 hintStyle: GoogleFonts.poppins(
@@ -475,7 +573,13 @@ class MsgInbox extends StatelessWidget {
                                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                               ),
                               style: GoogleFonts.poppins(fontSize: 13),
-                              onSubmitted: (_) => controller.sendInboxMessage(),
+                              onSubmitted: (_) async {
+                                final prefs = await SharedPreferences.getInstance();
+                                final token = prefs.getString('accessToken') ?? '';
+                                final text = groupController.inputController.text;
+                                groupController.inputController.clear();
+                                groupController.sendGroupMessage(eventId, text, token);
+                              },
                             ),
                           ),
                         ],
@@ -484,7 +588,13 @@ class MsgInbox extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   GestureDetector(
-                    onTap: () => controller.sendInboxMessage(),
+                    onTap: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      final token = prefs.getString('accessToken') ?? '';
+                      final text = groupController.inputController.text;
+                      groupController.inputController.clear();
+                      groupController.sendGroupMessage(eventId, text, token);
+                    },
                     child: Container(
                       width: 44,
                       height: 44,

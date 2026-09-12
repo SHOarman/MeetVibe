@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,7 +55,7 @@ class MsgController extends GetxController {
       if (token == null) return;
       
       final String url = "${Apiservices.baseUrl}/connection/pending".replaceAll(RegExp(r'/{2,}'), '/').replaceFirst(':/', '://'); 
-      // replaceAll is just to prevent double slashes before api
+      print("Fetching pending connections from: $url");
 
       final response = await GetConnect().get(
         url,
@@ -64,11 +65,19 @@ class MsgController extends GetxController {
         }
       );
 
+      print("Pending connections status: ${response.statusCode}");
+      print("Pending connections body: ${response.body}");
+
       if (response.statusCode == 200) {
-        final data = response.body['data'];
+        final body = response.body;
+        // In case GetConnect didn't decode JSON string
+        final decodedBody = body is String ? jsonDecode(body) : body;
+        final data = decodedBody['data'];
+        
         if (data != null && data['requests'] != null) {
           final List requests = data['requests'];
           connectionRequests.clear();
+          print("Found ${requests.length} pending requests");
           for (var req in requests) {
              final user = req['requester'] ?? req['user'] ?? req['from'] ?? {};
              final String image = user['image'] ?? user['profileImage'] ?? '';
@@ -77,7 +86,7 @@ class MsgController extends GetxController {
                ConnectionRequest(
                  id: req['id'] ?? req['_id'] ?? '',
                  name: user['name'] ?? user['username'] ?? 'Unknown User',
-                 meetupName: "Vibe Connection", // Dynamic value based on API if present
+                 meetupName: req['requestMessage'] ?? "Connection Request", 
                  mutualConnections: 0,
                  timeAgo: "Recently", 
                  avatarPath: image.isNotEmpty ? Apiservices.fixImageUrl(image) : 'assets/image/Avatar (1).png',
@@ -240,12 +249,13 @@ class MsgController extends GetxController {
 
       final response = await GetConnect().post(
         Apiservices.connectionRespond,
-        {
+        jsonEncode({
           "connectionId": request.id,
           "action": action
-        },
+        }),
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         }
       );

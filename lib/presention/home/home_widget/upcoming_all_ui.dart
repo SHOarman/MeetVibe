@@ -4,50 +4,15 @@ import 'package:meetvibe/core/route/app_routes.dart';
 import 'package:meetvibe/presention/home/home_widget/nearbycard.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
 
+import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
+
 class UpcomingAllUi extends StatelessWidget {
   const UpcomingAllUi({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Mock events list for presentation
-    final List<Map<String, dynamic>> nearbyEvents = [
-      {
-        'title': 'Live Music Festival',
-        'categoryName': 'Music',
-        'categoryColor': const Color(0xFF6B46C1),
-        'attendeeCount': 124,
-        'location': 'Gulsan lake park',
-        'dateTime': '02 July - 6:00 PM',
-        'imagePath': 'assets/image/image 6.png',
-      },
-      {
-        'title': 'Weekend Hike & Camping',
-        'categoryName': 'Adventure',
-        'categoryColor': const Color(0xFFF97316),
-        'attendeeCount': 32,
-        'location': 'Sajek Valley',
-        'dateTime': '05 July - 8:00 AM',
-        'imagePath': 'assets/image/unsplash_dDlYGoYJqBw.png',
-      },
-      {
-        'title': 'Tech Expo 2026',
-        'categoryName': 'Tech',
-        'categoryColor': const Color(0xFF2563EB),
-        'attendeeCount': 85,
-        'location': 'Zoom Office, Dhaka',
-        'dateTime': '10 July - 10:00 AM',
-        'imagePath': 'assets/image/image 3.png',
-      },
-      {
-        'title': 'Morning Yoga Session',
-        'categoryName': 'Fitness',
-        'categoryColor': const Color(0xFF10B981),
-        'attendeeCount': 35,
-        'location': 'Hatirjhil Park',
-        'dateTime': '08 June - 8:00 AM',
-        'imagePath': 'assets/image/image 4.png',
-      },
-    ];
+    final HomeController homeCtrl = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
 
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isTablet = screenWidth >= 600;
@@ -65,7 +30,7 @@ class UpcomingAllUi extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'Nearby Events',
+          'Upcoming Events',
           style: AppTextStyle.poppins(
             size: 20,
             weight: FontWeight.bold,
@@ -73,29 +38,52 @@ class UpcomingAllUi extends StatelessWidget {
           ),
         ),
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: nearbyEvents.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          childAspectRatio: childAspectRatio,
-          crossAxisSpacing: 12.0,
-          mainAxisSpacing: 16.0,
-        ),
-        itemBuilder: (context, index) {
-          final event = nearbyEvents[index];
-          return NearbyEventCard(
-            title: event['title'],
-            categoryName: event['categoryName'],
-            categoryColor: event['categoryColor'],
-            attendeeCount: event['attendeeCount'],
-            location: event['location'],
-            dateTime: event['dateTime'],
-            imagePath: event['imagePath'],
-            onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-          );
-        },
-      ),
+      body: Obx(() {
+        if (homeCtrl.isLoadingUpcoming.value && homeCtrl.upcomingEvents.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (homeCtrl.upcomingEvents.isEmpty) {
+          return const Center(child: Text("No upcoming events found", style: TextStyle(color: Colors.grey)));
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(16.0),
+          itemCount: homeCtrl.upcomingEvents.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: childAspectRatio,
+            crossAxisSpacing: 12.0,
+            mainAxisSpacing: 16.0,
+          ),
+          itemBuilder: (context, index) {
+            final event = homeCtrl.upcomingEvents[index];
+            final String coverSource = (event['coverImage'] != null && event['coverImage'].toString().isNotEmpty) 
+                                       ? Apiservices.fixImageUrl(event['coverImage']) 
+                                       : '';
+
+            int countFromDict = 0;
+            if (event['_count'] != null && event['_count'] is Map) {
+              countFromDict = event['_count']['participants'] ?? 0;
+            }
+            
+            final int joinedCount = countFromDict > 0 ? countFromDict :
+                (event['participations'] as List?)?.length ?? 
+                int.tryParse(event['participantCount']?.toString() ?? '') ?? 
+                int.tryParse(event['participantsCount']?.toString() ?? '') ?? 
+                int.tryParse(event['capacity']?.toString() ?? '') ?? 0;
+
+            return NearbyEventCard(
+              title: event['title'] ?? 'No Title',
+              categoryName: event['category'] ?? 'Uncategorized',
+              categoryColor: const Color(0xFF2563EB),
+              attendeeCount: joinedCount,
+              location: event['venueType']?.toString().toUpperCase() == 'ONLINE' ? 'Online' : (event['venueName'] ?? 'Online / TBA'),
+              dateTime: homeCtrl.getFormattedDate(event['startDate']),
+              imagePath: coverSource,
+              onJoinTap: () => Get.toNamed(AppRoutes.eventdetels, arguments: event),
+            );
+          },
+        );
+      }),
     );
   }
 }

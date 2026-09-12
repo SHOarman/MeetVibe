@@ -20,13 +20,11 @@ void main() async {
   DependencyInjection.bindings();
 
   final prefs = await SharedPreferences.getInstance();
-  final hasToken = prefs.getString('accessToken') != null;
+  final String? token = prefs.getString('accessToken');
+  final bool hasToken = (token != null && token.isNotEmpty);
 
   runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => MyApp(hasToken: hasToken),
-    ),
+      MyApp(hasToken: hasToken)
   );
 }
 

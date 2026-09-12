@@ -23,7 +23,8 @@ class _EditprofileState extends State<Editprofile> {
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
   late TextEditingController _addressController;
-  final TextEditingController _dobController = TextEditingController(text: "12/11/2001");
+  final TextEditingController _dobController = TextEditingController();
+  DateTime? _selectedDob;
   String? _selectedGender = "Male";
   File? _pickedImage;
   final ProfileController profileController = Get.isRegistered<ProfileController>() ? Get.find<ProfileController>() : Get.put(ProfileController());
@@ -43,7 +44,12 @@ class _EditprofileState extends State<Editprofile> {
     _addressController = TextEditingController(text: profileController.address.value);
     
     if (profileController.dateOfBirth.value.isNotEmpty) {
-      _dobController.text = profileController.dateOfBirth.value;
+      try {
+        _selectedDob = DateTime.parse(profileController.dateOfBirth.value);
+        _dobController.text = "${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}";
+      } catch (e) {
+        _dobController.text = profileController.dateOfBirth.value;
+      }
     }
     if (profileController.gender.value.isNotEmpty) {
       _selectedGender = profileController.gender.value;
@@ -76,7 +82,12 @@ class _EditprofileState extends State<Editprofile> {
 
     _dobWorker = ever(profileController.dateOfBirth, (String val) {
       if (val.isNotEmpty) {
-        _dobController.text = val;
+        try {
+          _selectedDob = DateTime.parse(val);
+          _dobController.text = "${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}";
+        } catch (e) {
+          _dobController.text = val;
+        }
       }
     });
 
@@ -130,6 +141,7 @@ class _EditprofileState extends State<Editprofile> {
     );
     if (picked != null) {
       setState(() {
+        _selectedDob = picked;
         _dobController.text =
             "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
       });
@@ -469,7 +481,7 @@ class _EditprofileState extends State<Editprofile> {
                     null, // image upload not implemented in API directly here right now
                     localImagePath: _pickedImage?.path,
                     username: _usernameController.text,
-                    dateOfBirth: _dobController.text,
+                    dateOfBirth: _selectedDob?.toIso8601String() ?? _dobController.text,
                     gender: _selectedGender,
                     address: _addressController.text,
                   );

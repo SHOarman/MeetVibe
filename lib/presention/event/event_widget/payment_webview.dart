@@ -13,6 +13,7 @@ class PaymentWebView extends StatefulWidget {
 class _PaymentWebViewState extends State<PaymentWebView> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -45,7 +46,8 @@ class _PaymentWebViewState extends State<PaymentWebView> {
   }
 
   bool _checkSuccessRedirect(String url) {
-    if (url.contains('localhost') || url.contains('127.0.0.1') || url.contains('10.0.2.2')) {
+    if ((url.contains('localhost') || url.contains('127.0.0.1') || url.contains('10.0.2.2')) && !_hasNavigated) {
+      _hasNavigated = true;
       print("Payment Success Redirect Intercepted! Closing WebView...");
       Get.back(result: true); // Close the webview and return success
       Get.snackbar(

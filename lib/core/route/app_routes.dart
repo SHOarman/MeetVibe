@@ -31,6 +31,8 @@ static const String eventdetels='/eventdetels';
 static const String upcamingall='/upcamingall';
 static const String tendingcatagory='/tendingcatagory';
 static const String upcominevent='/upcominevent';
+static const String popularweek='/popularweek';
+static const String categoryFiltered='/categoryFiltered';
 static const String notifcation= '/notifcation';
 
 //==========================================profile=========================================

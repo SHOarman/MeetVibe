@@ -9,11 +9,16 @@ class HomeController extends GetxController {
   final RxBool isLoadingNearby = false.obs;
   final RxBool isLoadingUpcoming = false.obs;
   final RxBool isLoadingMyEvents = false.obs;
+  final RxBool isLoadingJoinedEvents = false.obs;
+
+  final RxBool isLoadingPopular = false.obs;
 
   final RxList<dynamic> nearbyEvents = <dynamic>[].obs;
   final RxList<dynamic> upcomingEvents = <dynamic>[].obs;
   final RxList<dynamic> myEvents = <dynamic>[].obs;
   final RxList<dynamic> joinedEvents = <dynamic>[].obs;
+  final RxList<dynamic> popularEvents = <dynamic>[].obs;
+  final RxList<dynamic> dynamicCategories = <dynamic>[].obs;
   final RxSet<String> joinedEventIds = <String>{}.obs;
 
   @override
@@ -23,15 +28,20 @@ class HomeController extends GetxController {
     fetchUpcomingEvents();
     fetchMyEvents();
     fetchJoinedEvents();
+    fetchPopularEvents();
+    fetchCategories();
   }
 
   Future<void> fetchJoinedEvents({bool isRetry = false}) async {
     try {
+      if (!isRetry) isLoadingJoinedEvents.value = true;
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
       if (token == null) return;
 
-      final response = await GetConnect().get(
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.get(
         '${Apiservices.baseUrl}/event/joined?when=all',
         headers: {
           'Accept': 'application/json',
@@ -54,9 +64,15 @@ class HomeController extends GetxController {
         if (refreshed) {
            await fetchJoinedEvents(isRetry: true);
         }
+      } else if (response.statusCode == null && !isRetry) {
+        print("Joined Events GET Network Error (null status): Retrying in 2s...");
+        await Future.delayed(const Duration(seconds: 2));
+        await fetchJoinedEvents(isRetry: true);
       }
     } catch (e) {
       print('Error fetching joined events: $e');
+    } finally {
+      if (!isRetry) isLoadingJoinedEvents.value = false;
     }
   }
 
@@ -132,7 +148,9 @@ class HomeController extends GetxController {
         print("Geolocator error exception: $e");
       }
 
-      final response = await GetConnect().get(
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.get(
         apiUrl,
         headers: {
           'Accept': 'application/json',
@@ -151,6 +169,10 @@ class HomeController extends GetxController {
         if (refreshed) {
            await fetchNearbyEvents(isRetry: true);
         }
+      } else if (response.statusCode == null && !isRetry) {
+        print("Nearby Events GET Network Error (null status): Retrying in 2s...");
+        await Future.delayed(const Duration(seconds: 2));
+        await fetchNearbyEvents(isRetry: true);
       }
     } catch (e) {
       print('Error fetching nearby events: $e');
@@ -165,8 +187,21 @@ class HomeController extends GetxController {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
 
-      final response = await GetConnect().get(
-        Apiservices.eventList,
+      String apiUrl = "${Apiservices.eventUpcoming}?limit=10";
+      
+      try {
+        Position? position = await Geolocator.getLastKnownPosition();
+        if (position != null) {
+          apiUrl = "${Apiservices.eventUpcoming}?lat=${position.latitude}&lng=${position.longitude}&limit=10";
+        }
+      } catch (e) {
+        // Location might fail, ignore
+      }
+
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.get(
+        apiUrl,
         headers: {
           'Accept': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -177,6 +212,14 @@ class HomeController extends GetxController {
         final data = response.body['data'];
         if (data != null && data['events'] != null) {
           upcomingEvents.value = List.from(data['events']);
+        } else if (data != null && data is List) {
+          upcomingEvents.value = List.from(data);
+        } else if (data != null && data['upcoming'] != null) {
+          upcomingEvents.value = List.from(data['upcoming']);
+        } else if (response.body != null && response.body['events'] != null) {
+          upcomingEvents.value = List.from(response.body['events']);
+        } else {
+          upcomingEvents.value = List.from(response.body ?? []);
         }
       } else if (response.statusCode == 401 && !isRetry) {
         final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
@@ -184,11 +227,85 @@ class HomeController extends GetxController {
         if (refreshed) {
            await fetchUpcomingEvents(isRetry: true);
         }
+      } else if (response.statusCode == null && !isRetry) {
+        print("Upcoming Events GET Network Error (null status): Retrying in 2s...");
+        await Future.delayed(const Duration(seconds: 2));
+        await fetchUpcomingEvents(isRetry: true);
       }
     } catch (e) {
       print('Error fetching upcoming events: $e');
     } finally {
       if (!isRetry) isLoadingUpcoming.value = false;
+    }
+  }
+
+  Future<void> fetchPopularEvents({bool isRetry = false}) async {
+    try {
+      if (!isRetry) isLoadingPopular.value = true;
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      String apiUrl = "${Apiservices.eventPopular}?limit=10";
+      
+      try {
+        Position? position = await Geolocator.getLastKnownPosition();
+        if (position != null) {
+          apiUrl = "${Apiservices.eventPopular}?lat=${position.latitude}&lng=${position.longitude}&limit=10";
+        }
+      } catch (e) {
+        // Location might fail, ignore
+      }
+
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.get(
+        apiUrl,
+        headers: {
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        }
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.body['data'];
+        if (data != null && data['events'] != null) {
+          popularEvents.value = List.from(data['events']);
+        } else if (data != null && data is List) {
+          popularEvents.value = List.from(data);
+        } else if (response.body != null && response.body['events'] != null) {
+           popularEvents.value = List.from(response.body['events']);
+        } else {
+           popularEvents.value = List.from(response.body ?? []);
+        }
+      } else if (response.statusCode == 401 && !isRetry) {
+        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+        final refreshed = await authController.refreshTokenAPI();
+        if (refreshed) {
+           await fetchPopularEvents(isRetry: true);
+        }
+      } else if (response.statusCode == null && !isRetry) {
+        print("Popular Events GET Network Error (null status): Retrying in 2s...");
+        await Future.delayed(const Duration(seconds: 2));
+        await fetchPopularEvents(isRetry: true);
+      }
+    } catch (e) {
+      print('Error fetching popular events: $e');
+    } finally {
+      if (!isRetry) isLoadingPopular.value = false;
+    }
+  }
+
+  Future<void> fetchCategories() async {
+    try {
+      final response = await GetConnect().get(Apiservices.eventCategories);
+      if (response.statusCode == 200) {
+        final data = response.body['data'];
+        if (data != null && data['categories'] != null) {
+           dynamicCategories.value = List.from(data['categories']);
+        }
+      }
+    } catch (e) {
+      print('Fetch categories error: $e');
     }
   }
 
@@ -198,7 +315,9 @@ class HomeController extends GetxController {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
 
-      final response = await GetConnect().get(
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.get(
         Apiservices.eventMine,
         headers: {
           'Accept': 'application/json',
@@ -217,6 +336,10 @@ class HomeController extends GetxController {
         if (refreshed) {
            await fetchMyEvents(isRetry: true);
         }
+      } else if (response.statusCode == null && !isRetry) {
+        print("My Events GET Network Error (null status): Retrying in 2s...");
+        await Future.delayed(const Duration(seconds: 2));
+        await fetchMyEvents(isRetry: true);
       }
     } catch (e) {
       print('Error fetching my events: $e');

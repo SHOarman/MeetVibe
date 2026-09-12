@@ -7,6 +7,7 @@ import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
 import 'package:meetvibe/presention/event/event_controller/event_join_controller.dart';
 import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart';
 import 'package:meetvibe/core/services/api_sevices/api_services.dart';
+import 'package:meetvibe/core/route/app_routes.dart';
 
 class EventDetailsUi extends StatelessWidget {
   const EventDetailsUi({super.key});
@@ -77,6 +78,21 @@ class EventDetailsUi extends StatelessWidget {
     final String location = event?['address'] ?? event?['venueName'] ?? "Location TBA";
     final String agenda = event?['agenda'] ?? "No description available.";
     final int capacity = event?['capacity'] ?? 0;
+    
+    final String whatToBring = event?['whatToBring']?.toString() ?? "";
+    final String venueType = event?['venueType']?.toString() ?? "";
+    final String onlineLink = event?['onlineLink']?.toString() ?? "";
+
+    int countFromDict = 0;
+    if (event != null && event['_count'] != null && event['_count'] is Map) {
+      countFromDict = event['_count']['participants'] ?? 0;
+    }
+    
+    final int joinedCount = countFromDict > 0 ? countFromDict :
+        (event?['participations'] as List?)?.length ?? 
+        int.tryParse(event?['participantCount']?.toString() ?? '') ?? 
+        int.tryParse(event?['participantsCount']?.toString() ?? '') ?? 0;
+
     final bool isFree = event?['isFree'] == true || event?['isFree'] == 'true';
     final double price = (event?['price'] != null) ? double.tryParse(event!['price'].toString()) ?? 0.0 : 0.0;
     
@@ -229,7 +245,7 @@ class EventDetailsUi extends StatelessWidget {
                             _buildAttendeeAvatars(),
                             const SizedBox(width: 8),
                             Text(
-                              "$capacity others going",
+                              "$joinedCount others going",
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
@@ -261,6 +277,29 @@ class EventDetailsUi extends StatelessWidget {
                             height: 1.5,
                           ),
                         ),
+                        
+                        if (whatToBring.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          Text(
+                            "What to Bring",
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0C0A09),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            whatToBring,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF6B7280),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 20),
                         const Divider(color: Color(0x1A000000), height: 1),
                         const SizedBox(height: 20),
@@ -346,6 +385,31 @@ class EventDetailsUi extends StatelessWidget {
                             ),
                           ],
                         ),
+
+                        if (venueType.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Icon(
+                                venueType.toUpperCase() == 'ONLINE' ? Icons.videocam_outlined : Icons.business_outlined,
+                                size: 18,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  venueType.toUpperCase() == 'ONLINE' ? "ONLINE" : "OFFLINE",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF2A2A2A),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
                         const SizedBox(height: 20),
                         const Divider(color: Color(0x1A000000), height: 1),
                         const SizedBox(height: 24),
@@ -512,9 +576,16 @@ class EventDetailsUi extends StatelessWidget {
                 ],
               ),
               GestureDetector(
-                onTap: (isHost || participationStatus.isNotEmpty) ? null : () {
+                onTap: (isHost || participationStatus.isNotEmpty) ? null : () async {
                   if (eventId != null) {
-                    eventJoinController.joinEvent(eventId.toString(), isFree: isFree);
+                    final success = await eventJoinController.joinEvent(eventId.toString(), isFree: isFree);
+                    if (success) {
+                       Get.toNamed(AppRoutes.msgInbox, arguments: {
+                         'eventId': eventId.toString(),
+                         'title': title,
+                         'capacity': capacity,
+                       });
+                    }
                   } else {
                     Get.snackbar("Error", "Invalid event ID. Cannot join.");
                   }

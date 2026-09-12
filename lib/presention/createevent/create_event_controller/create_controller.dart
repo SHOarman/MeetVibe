@@ -181,7 +181,7 @@ class CreateController extends GetxController {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.body['data'];
-        // Store eventId if it returns it, so subsequent updates or steps use it
+
         if (data != null && data['event'] != null && data['event']['id'] != null) {
           eventId.value = data['event']['id'];
         } else if (data != null && data['id'] != null) {

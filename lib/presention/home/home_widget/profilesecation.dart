@@ -27,8 +27,8 @@ class ProfileSecation extends StatelessWidget {
     return Obx(() {
       final imageUrl = profileController.image.value;
       final localImage = profileController.localImage.value;
-      final rawName =   profileController.name.value;
-      final name = "${rawName.split(" ").first}!";
+      final rawName = profileController.name.value;
+      final name = rawName.isNotEmpty ? "${rawName.split(" ").first}!" : "";
 
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -78,18 +78,31 @@ class ProfileSecation extends StatelessWidget {
                     color: const Color(0xff0C0A09),
                   ),
                 ),
-                Text(
-                  name,
-                  style: AppTextStyle.poppins(
-                    size: 20,
-                    weight: FontWeight.bold,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xffEC6D43), Color(0xffFFB670)],
+                if (rawName.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4.0),
+                    child: SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xffEC6D43)),
+                      ),
                     ),
+                  )
+                else
+                  Text(
+                    name,
+                    style: AppTextStyle.poppins(
+                      size: 20,
+                      weight: FontWeight.bold,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xffEC6D43), Color(0xffFFB670)],
+                      ),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ],
             ),
           ),

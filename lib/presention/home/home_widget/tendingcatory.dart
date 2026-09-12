@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:get/get.dart';
+import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
+import 'package:meetvibe/core/route/app_routes.dart';
 
 class CategoryModel {
   final String label;
   final String iconPath;
   final Color bgColor;
   final Color iconColor;
+  final String? emoji;
 
   const CategoryModel({
     required this.label,
     required this.iconPath,
     required this.bgColor,
     required this.iconColor,
+    this.emoji,
   });
 }
 
@@ -66,19 +71,63 @@ class TrendingCategoryRow extends StatelessWidget {
     ),
   ];
 
+  CategoryModel _mapCategoryToModel(dynamic categoryNode) {
+    final name = (categoryNode['name'] ?? categoryNode['slug'] ?? 'Unknown').toString();
+    final slug = (categoryNode['slug'] ?? name).toString().toLowerCase();
+    final apiEmoji = categoryNode['emoji']?.toString();
+
+    // Map by slug or label
+    for (var cat in categories) {
+      if (cat.label.toLowerCase() == slug || cat.label.toLowerCase() == name.toLowerCase()) {
+        return CategoryModel(
+          label: name.isNotEmpty ? name : cat.label,
+          iconPath: cat.iconPath,
+          bgColor: cat.bgColor,
+          iconColor: cat.iconColor,
+          emoji: apiEmoji != null && apiEmoji.trim().isNotEmpty ? apiEmoji : cat.emoji,
+        );
+      }
+    }
+    
+    // Fallback model if not in predefined list - generating dynamic color based on slug
+    int hash = 0;
+    for (var i = 0; i < slug.length; i++) {
+       hash += slug.codeUnitAt(i);
+    }
+    final predefinedColorCategories = categories.where((c) => c.label != 'More').toList();
+    final fallbackCat = predefinedColorCategories[hash % predefinedColorCategories.length];
+
+    return CategoryModel(
+      label: name,
+      iconPath: 'assets/icon/Frame (22).svg', // generic icon
+      bgColor: fallbackCat.bgColor,
+      iconColor: fallbackCat.iconColor,
+      emoji: apiEmoji,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      clipBehavior: Clip.none,
-      child: Row(
-        children: categories.map((category) {
-          return Padding(
+    final homeCtrl = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
+
+    return Obx(() {
+      if (homeCtrl.dynamicCategories.isEmpty) {
+        return const SizedBox(height: 80, child: Center(child: CircularProgressIndicator()));
+      }
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        child: Row(
+          children: homeCtrl.dynamicCategories.map((categoryNode) {
+            final category = _mapCategoryToModel(categoryNode);
+            return Padding(
             padding: const EdgeInsets.only(right: 18.0),
             child: GestureDetector(
               onTap: () {
                 if (onCategoryTap != null) {
                   onCategoryTap!(category);
+                } else {
+                  Get.toNamed(AppRoutes.categoryFiltered, arguments: {'slug': categoryNode['slug'], 'name': categoryNode['name']});
                 }
               },
               child: Column(
@@ -109,13 +158,20 @@ class TrendingCategoryRow extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: SvgPicture.asset(
-                      category.iconPath,
-                      colorFilter: ColorFilter.mode(
-                        category.iconColor,
-                        BlendMode.srcIn,
-                      ),
-                    ),
+                    child: (category.emoji != null && category.emoji!.trim().isNotEmpty)
+                      ? Center(
+                          child: Text(
+                            category.emoji!,
+                            style: const TextStyle(fontSize: 22, height: 1.0),
+                          ),
+                        )
+                      : SvgPicture.asset(
+                          category.iconPath,
+                          colorFilter: ColorFilter.mode(
+                            category.iconColor,
+                            BlendMode.srcIn,
+                          ),
+                        ),
                   ),
 
                   const SizedBox(height: 8),
@@ -134,5 +190,6 @@ class TrendingCategoryRow extends StatelessWidget {
         }).toList(),
       ),
     );
+    });
   }
 }

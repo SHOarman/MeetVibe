@@ -1,8 +1,7 @@
 class Apiservices {
   Apiservices._();
-
-  static const String baseUrl = "https://britain-lenders-boundary-coupon.trycloudflare.com/api/v1";
-
+  // static const String baseUrl = "https://metal-pregnancy-stated-selecting.trycloudflare.com/api/v1";
+  static const String baseUrl = "https://appeals-deck-mods-vii.trycloudflare.com/api/v1"; // Direct PC IP (Fastest for both Emulator and Real Phone on same Wi-Fi)
   //========================================================Chat=======================================
   static const String chatConversations = "$baseUrl/chat/conversations";
   static String chatGroup(String eventId) => "$baseUrl/chat/group/$eventId";
@@ -43,6 +42,8 @@ class Apiservices {
   static const String eventCategories = "$baseUrl/event/categories";
   static const String eventList = "$baseUrl/event";
   static const String eventSuggestions = "$baseUrl/event/suggestions";
+  static const String eventUpcoming = "$baseUrl/event/upcoming";
+  static const String eventPopular = "$baseUrl/event/popular";
   static const String eventMine = "$baseUrl/event/mine";
   static String eventDetails(String id) => "$baseUrl/event/$id";
   static String eventDelete(String id) => "$baseUrl/event/$id";
@@ -85,8 +86,11 @@ class Apiservices {
   static const String settingsTerms = "$baseUrl/settings/terms";
   static const String settingsReportProblem = "$baseUrl/settings/report-problem";
   static String fixImageUrl(String? url) {
-    if (url == null || url.isEmpty) return '';
+    if (url == null || url.isEmpty || url.contains('example.com') || url == 'string') {
+       return 'assets/image/Avatar (1).png';
+    }
     try {
+      // Direct pass-through if using new API server URL, adjust local PC/tunnel if needed
       if (url.contains('.trycloudflare.com')) {
         final uri = Uri.parse(url);
         final currentUri = Uri.parse(baseUrl);

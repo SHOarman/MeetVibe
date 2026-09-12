@@ -133,7 +133,7 @@ class Login extends StatelessWidget {
                     password: authController.loginPasswordController.text,
                   );
                   if (success) {
-                    Get.toNamed(AppRoutes.homeui);
+                    Get.offAllNamed(AppRoutes.homeui);
                   }
                 }
               )),

@@ -101,7 +101,7 @@ class Authcontroller extends GetxController {
 
       final response = await GetConnect().post(
         Apiservices.authRefresh,
-        {"refreshToken": rToken},
+        jsonEncode({"refreshToken": rToken}),
         headers: {'Accept': 'application/json', 'Content-Type': 'application/json'}
       );
 
@@ -163,9 +163,10 @@ class Authcontroller extends GetxController {
     required String email,
     required String password,
     required String name,
+    bool isRetry = false,
   }) async {
     try {
-      isLoading.value = true;
+      if (!isRetry) isLoading.value = true;
       
       final payload = {
         "email": email.trim(),
@@ -178,7 +179,9 @@ class Authcontroller extends GetxController {
       print('PAYLOAD: $payload');
       print('------------------------------------');
 
-      final response = await GetConnect().post(
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.post(
         Apiservices.authRegister,
         jsonEncode(payload),
         headers: {
@@ -213,7 +216,7 @@ class Authcontroller extends GetxController {
       Get.snackbar('Error', 'An unexpected error occurred: $e');
       return false;
     } finally {
-      isLoading.value = false;
+      if (!isRetry) isLoading.value = false;
     }
   }
 
@@ -221,15 +224,25 @@ class Authcontroller extends GetxController {
   Future<bool> login({
     required String email,
     required String password,
+    bool isRetry = false,
   }) async {
     try {
       isLoading.value = true;
-      final response = await GetConnect().post(
+      final payload = {
+        "email": email.trim(),
+        "password": password,
+      };
+
+      print('----- SENDING LOGIN REQUEST -----');
+      print('URL: ${Apiservices.authLogin}');
+      print('PAYLOAD: $payload');
+      print('---------------------------------');
+
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.post(
         Apiservices.authLogin,
-        {
-          "email": email.trim(),
-          "password": password,
-        },
+        jsonEncode(payload),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -278,15 +291,19 @@ class Authcontroller extends GetxController {
   Future<bool> verifyOtp({
     required String email,
     required String otp,
+    bool isRetry = false,
   }) async {
     try {
-      isLoading.value = true;
-      final response = await GetConnect().post(
+      if (!isRetry) isLoading.value = true;
+      final payload = {
+        "email": email.trim(),
+        "otp": otp.trim(),
+      };
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.post(
         Apiservices.authVerifyOtp,
-        {
-          "email": email.trim(),
-          "otp": otp.trim(),
-        },
+        jsonEncode(payload),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -315,21 +332,24 @@ class Authcontroller extends GetxController {
       Get.snackbar('Error', 'An unexpected error occurred: $e');
       return false;
     } finally {
-      isLoading.value = false;
+      if (!isRetry) isLoading.value = false;
     }
   }
 
   // Resend OTP API Call
   Future<bool> resendOtp({
     required String email,
+    bool isRetry = false,
   }) async {
     try {
-      isLoading.value = true;
-      final response = await GetConnect().post(
+      if (!isRetry) isLoading.value = true;
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.post(
         Apiservices.authResendOtp,
-        {
+        jsonEncode({
           "email": email.trim(),
-        },
+        }),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -347,17 +367,19 @@ class Authcontroller extends GetxController {
       Get.snackbar('Error', 'An unexpected error occurred: $e');
       return false;
     } finally {
-      isLoading.value = false;
+      if (!isRetry) isLoading.value = false;
     }
   }
 
   // Forgot Password API Call
-  Future<bool> forgotPassword({required String email}) async {
+  Future<bool> forgotPassword({required String email, bool isRetry = false}) async {
     try {
-      isLoading.value = true;
-      final response = await GetConnect().post(
+      if (!isRetry) isLoading.value = true;
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.post(
         Apiservices.authForgotPassword,
-        {"email": email.trim()},
+        jsonEncode({"email": email.trim()}),
         headers: {'Accept': 'application/json', 'Content-Type': 'application/json'}
       );
 
@@ -373,21 +395,23 @@ class Authcontroller extends GetxController {
       Get.snackbar('Error', 'An unexpected error occurred: $e');
       return false;
     } finally {
-      isLoading.value = false;
+      if (!isRetry) isLoading.value = false;
     }
   }
 
   // Reset Password API Call
-  Future<bool> resetPassword({required String email, required String otp, required String password}) async {
+  Future<bool> resetPassword({required String email, required String otp, required String password, bool isRetry = false}) async {
     try {
-      isLoading.value = true;
-      final response = await GetConnect().post(
+      if (!isRetry) isLoading.value = true;
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.post(
         Apiservices.authResetPassword,
-        {
+        jsonEncode({
           "email": email.trim(),
           "otp": otp.trim(),
           "password": password
-        },
+        }),
         headers: {'Accept': 'application/json', 'Content-Type': 'application/json'}
       );
 
@@ -402,7 +426,7 @@ class Authcontroller extends GetxController {
       Get.snackbar('Error', 'An unexpected error occurred: $e');
       return false;
     } finally {
-      isLoading.value = false;
+      if (!isRetry) isLoading.value = false;
     }
   }
 
@@ -414,7 +438,7 @@ class Authcontroller extends GetxController {
       final token = prefs.getString('accessToken');
 
       final getConnect = GetConnect();
-      getConnect.timeout = const Duration(seconds: 30); // Increased timeout to 30 seconds
+      getConnect.timeout = const Duration(seconds: 30);
 
       print('----- SENDING VERIFY IDENTITY REQUEST -----');
       print('URL: ${Apiservices.userVerifyIdentity}');
@@ -437,7 +461,7 @@ class Authcontroller extends GetxController {
         if (responseData is Map && responseData['data'] != null && responseData['data']['url'] != null) {
           return responseData['data']['url'] as String;
         } else if (responseData is Map && responseData['url'] != null) {
-          return responseData['url'] as String; // fallback just in case
+          return responseData['url'] as String;
         } else {
           Get.snackbar('Error', 'Verification URL missing in response.');
           return null;
@@ -447,7 +471,7 @@ class Authcontroller extends GetxController {
         return null;
       }
     } catch (e) {
-      print('Verify Identity Exception: $e'); // Printing to console
+      print('Verify Identity Exception: $e');
       Get.snackbar('Error', 'Exception: $e');
       return null;
     } finally {
@@ -503,7 +527,9 @@ class Authcontroller extends GetxController {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
 
-      final response = await GetConnect().post(
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.post(
         Apiservices.authLogout,
         {},
         headers: {
@@ -522,6 +548,11 @@ class Authcontroller extends GetxController {
         return false;
       }
     } catch (e) {
+      if (e.toString().contains('Timeout') || e.toString().contains('SocketException')) {
+        await clearTokens();
+        Get.snackbar('Success', 'Logged out locally (server timeout).');
+        return true;
+      }
       Get.snackbar('Error', 'Logout Exception: $e');
       return false;
     } finally {
@@ -578,12 +609,13 @@ class Authcontroller extends GetxController {
 
       final response = await GetConnect().post(
         Apiservices.authChangePassword,
-        {
+        jsonEncode({
           "currentPassword": currentPassword,
           "newPassword": newPassword
-        },
+        }),
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         }
       );

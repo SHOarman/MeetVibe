@@ -20,16 +20,18 @@ class SubscriptionController extends GetxController {
 
   Future<void> fetchSubscriptionStatus({bool isRetry = false}) async {
     try {
-      if (!isRetry) isLoading.value = true;
-      
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
+
+      if (token == null || token.isEmpty) return;
+
+      if (!isRetry) isLoading.value = true;
 
       final response = await GetConnect().get(
         Apiservices.subscriptionStatus,
         headers: {
           'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $token',
         }
       );
 

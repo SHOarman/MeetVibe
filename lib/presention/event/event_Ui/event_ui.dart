@@ -10,15 +10,24 @@ import 'package:meetvibe/presention/home/home_widget/tendingcatory.dart'
     show TrendingCategoryRow;
 import 'package:meetvibe/presention/home/home_widget/upcomingevent.dart';
 import 'package:meetvibe/unity/app_text_styles/app_text_style.dart';
+import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
+import 'package:get/get.dart';
 
 class EventUi extends StatelessWidget {
   const EventUi({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final homeController = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
+
     return Scaffold(
       bottomNavigationBar: CustomBottomNavBar(selectedIndex: 1),
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await homeController.fetchPopularEvents();
+          // other fetches if needed
+        },
+        child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
@@ -83,37 +92,63 @@ class EventUi extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
-                  children: [
-                    NearbyEventCard(
-                      width: 176.0,
-                      title: 'Live Music Festival',
-                      categoryName: 'Music',
-                      categoryColor: const Color(0xFF6B46C1),
-                      attendeeCount: 124,
-                      location: 'Gulsan lake park',
-                      dateTime: '02 July - 6:00 PM',
-                      imagePath: 'assets/image/image 6 (1).png',
-                      onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-                    ),
-                    const SizedBox(width: 14),
-                    NearbyEventCard(
-                      width: 176.0,
-                      title: 'Weekend Hike & Camping',
-                      categoryName: 'Adventure',
-                      categoryColor: const Color(0xFFF97316),
-                      attendeeCount: 32,
-                      location: 'Sajek Valley',
-                      dateTime: '05 July - 8:00 AM',
-                      imagePath: 'assets/image/image 6 (1).png',
-                      onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-                    ),
-                  ],
-                ),
-              ),
+              Obx(() {
+                if (homeController.isLoadingNearby.value) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                if (homeController.nearbyEvents.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: Text("No events found")),
+                  );
+                }
+
+                final displayNearby = homeController.nearbyEvents.take(3).toList();
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: displayNearby.map((event) {
+                      final eventId = (event['id'] ?? event['_id'] ?? '').toString();
+                      final bool isJoined = homeController.joinedEventIds.contains(eventId);
+                      final bool isFree = event['isFree'] == true || event['isFree'] == 'true';
+
+                      int countFromDict = 0;
+                      if (event['_count'] != null && event['_count'] is Map) {
+                        countFromDict = event['_count']['participants'] ?? 0;
+                      }
+                      
+                      final int joinedCount = countFromDict > 0 ? countFromDict :
+                          (event['participations'] as List?)?.length ?? 
+                          int.tryParse(event['participantCount']?.toString() ?? '') ?? 
+                          int.tryParse(event['participantsCount']?.toString() ?? '') ?? 
+                          int.tryParse(event['capacity']?.toString() ?? '') ?? 0;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 14.0),
+                        child: NearbyEventCard(
+                          width: 176.0,
+                          title: event['title'] ?? 'Unknown Event',
+                          categoryName: event['category'] ?? 'Category',
+                          categoryColor: const Color(0xFF6B46C1),
+                          attendeeCount: joinedCount,
+                          location: event['venueType']?.toString().toUpperCase() == 'ONLINE' ? 'Online' : (event['address'] ?? event['venueName'] ?? 'Location TBA'),
+                          dateTime: homeController.getFormattedDate(event['startDate']),
+                          imagePath: event['coverImage'] ?? 'assets/image/image 6 (1).png',
+                          isJoined: isJoined,
+                          isFree: isFree,
+                          onJoinTap: () => Get.toNamed(AppRoutes.eventdetels, arguments: event),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              }),
 
               SizedBox(height: 20,),
               Row(
@@ -128,7 +163,7 @@ class EventUi extends StatelessWidget {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => Get.toNamed(AppRoutes.upcamingall),
+                    onTap: () => Get.toNamed(AppRoutes.popularweek),
                     child: Text(
                       "See All",
                       style: AppTextStyle.poppins(
@@ -145,42 +180,69 @@ class EventUi extends StatelessWidget {
 
 
               SizedBox(height: 16,),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
-                  children: [
-                    UpcomingEventCard(
-                      width: 176.0,
-                      day: '05',
-                      month: 'Jun',
-                      title: 'Teach Talk',
-                      attendeeCount: 100,
-                      location: 'Zoom Office, Dhaka',
-                      distance: '2.9 km away',
-                      imagePath: 'assets/image/image 6 (3).png',
-                      onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-                    ),
-                    const SizedBox(width: 14),
-                    UpcomingEventCard(
-                      width: 176.0,
-                      day: '10',
-                      month: 'April',
-                      title: 'Morning Yoga Session',
-                      attendeeCount: 35,
-                      location: 'Hatirjhil Park',
-                      distance: '10.00 km away',
-                      imagePath: 'assets/image/image 6 (2).png',
-                      onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-                    ),
-                  ],
-                ),
-              ),
+              Obx(() {
+                if (homeController.isLoadingPopular.value) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                if (homeController.popularEvents.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Center(child: Text("No popular events found")),
+                  );
+                }
+
+                // Show max 3 items as requested
+                final displayEvents = homeController.popularEvents.take(3).toList();
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: displayEvents.map((event) {
+                      final eventId = (event['id'] ?? event['_id'] ?? '').toString();
+                      final bool isJoined = homeController.joinedEventIds.contains(eventId);
+                      final bool isFree = event['isFree'] == true || event['isFree'] == 'true';
+
+                      int countFromDict = 0;
+                      if (event['_count'] != null && event['_count'] is Map) {
+                        countFromDict = event['_count']['participants'] ?? 0;
+                      }
+                      
+                      final int joinedCount = countFromDict > 0 ? countFromDict :
+                          (event['participations'] as List?)?.length ?? 
+                          int.tryParse(event['participantCount']?.toString() ?? '') ?? 
+                          int.tryParse(event['capacity']?.toString() ?? '') ?? 0;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 14.0),
+                        child: UpcomingEventCard(
+                          width: 176.0,
+                          day: homeController.getDay(event['startDate']),
+                          month: homeController.getMonth(event['startDate']),
+                          title: event['title'] ?? 'Unknown Event',
+                          attendeeCount: joinedCount,
+                          location: event['venueType']?.toString().toUpperCase() == 'ONLINE' ? 'Online' : (event['address'] ?? event['venueName'] ?? 'Location TBA'),
+                          distance: '2.1 km away', // distance logic not yet in backend
+                          imagePath: event['coverImage'] ?? 'assets/image/image 6 (3).png',
+                          isJoined: isJoined,
+                          isFree: isFree,
+                          onJoinTap: () => Get.toNamed(AppRoutes.eventdetels, arguments: event),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              }),
 
               SizedBox(height: 100,)
             ],
           ),
         ),
+      ),
       ),
     );
   }

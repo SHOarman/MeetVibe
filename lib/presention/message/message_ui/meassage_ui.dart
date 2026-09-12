@@ -30,6 +30,9 @@ class MeassageUi extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             controller.selectedTabIndex.value = index;
+            if (index == 3) {
+               controller.fetchPendingConnections();
+            }
           },
           child: Container(
             height: 31,

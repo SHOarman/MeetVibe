@@ -107,14 +107,26 @@ class HomeUi extends StatelessWidget {
                   );
                 }
 
+                final displayNearby = homeController.nearbyEvents.take(3).toList();
+
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   clipBehavior: Clip.none,
                   child: Row(
-                    children: homeController.nearbyEvents.map((event) {
+                    children: displayNearby.map((event) {
                       final eventId = (event['id'] ?? event['_id'] ?? '').toString();
                       final bool isJoined = homeController.joinedEventIds.contains(eventId);
                       final bool isFree = event['isFree'] == true || event['isFree'] == 'true';
+
+                      int countFromDict = 0;
+                      if (event['_count'] != null && event['_count'] is Map) {
+                        countFromDict = event['_count']['participants'] ?? 0;
+                      }
+                      
+                      final int joinedCount = countFromDict > 0 ? countFromDict :
+                          (event['participations'] as List?)?.length ?? 
+                          int.tryParse(event['participantCount']?.toString() ?? '') ?? 
+                          int.tryParse(event['capacity']?.toString() ?? '') ?? 0;
 
                       return Padding(
                         padding: const EdgeInsets.only(right: 14.0),
@@ -123,8 +135,8 @@ class HomeUi extends StatelessWidget {
                           title: event['title'] ?? 'Unknown Event',
                           categoryName: event['category'] ?? 'Category',
                           categoryColor: const Color(0xFF6B46C1),
-                          attendeeCount: event['capacity'] ?? 0,
-                          location: event['address'] ?? event['venueName'] ?? 'Location TBA',
+                          attendeeCount: joinedCount,
+                          location: event['venueType']?.toString().toUpperCase() == 'ONLINE' ? 'Online' : (event['address'] ?? event['venueName'] ?? 'Location TBA'),
                           dateTime: homeController.getFormattedDate(event['startDate']),
                           imagePath: event['coverImage'] ?? 'assets/image/image 6 (1).png',
                           isJoined: isJoined,
@@ -217,14 +229,26 @@ class HomeUi extends StatelessWidget {
                   );
                 }
 
+                final displayEvents = homeController.upcomingEvents.take(3).toList();
+
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   clipBehavior: Clip.none,
                   child: Row(
-                    children: homeController.upcomingEvents.map((event) {
+                    children: displayEvents.map((event) {
                       final eventId = (event['id'] ?? event['_id'] ?? '').toString();
                       final bool isJoined = homeController.joinedEventIds.contains(eventId);
                       final bool isFree = event['isFree'] == true || event['isFree'] == 'true';
+
+                      int countFromDict = 0;
+                      if (event['_count'] != null && event['_count'] is Map) {
+                        countFromDict = event['_count']['participants'] ?? 0;
+                      }
+                      
+                      final int joinedCount = countFromDict > 0 ? countFromDict :
+                          (event['participations'] as List?)?.length ?? 
+                          int.tryParse(event['participantCount']?.toString() ?? '') ?? 
+                          int.tryParse(event['capacity']?.toString() ?? '') ?? 0;
 
                       return Padding(
                         padding: const EdgeInsets.only(right: 14.0),
@@ -233,8 +257,8 @@ class HomeUi extends StatelessWidget {
                           day: homeController.getDay(event['startDate']),
                           month: homeController.getMonth(event['startDate']),
                           title: event['title'] ?? 'Unknown Event',
-                          attendeeCount: event['capacity'] ?? 0,
-                          location: event['address'] ?? event['venueName'] ?? 'Location TBA',
+                          attendeeCount: joinedCount,
+                          location: event['venueType']?.toString().toUpperCase() == 'ONLINE' ? 'Online' : (event['address'] ?? event['venueName'] ?? 'Location TBA'),
                           distance: '2.1 km away', // Backend may not provide distance yet
                           imagePath: event['coverImage'] ?? 'assets/image/image 6 (3).png',
                           isJoined: isJoined,

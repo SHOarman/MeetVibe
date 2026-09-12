@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart' hide Notification;
+import 'package:flutter/material.dart' hide Notification;
 import 'package:get/get.dart';
 import 'package:meetvibe/core/route/app_routes.dart';
 import 'package:meetvibe/core/services/api_sevices/api_services.dart';
@@ -27,6 +27,8 @@ import 'package:meetvibe/presention/home/home_widget/event_details_ui.dart';
 import 'package:meetvibe/presention/home/home_widget/trending_category_ui.dart';
 import 'package:meetvibe/presention/home/home_ui/nearbyall.dart';
 import 'package:meetvibe/presention/home/home_ui/upcaminall.dart';
+import 'package:meetvibe/presention/event/event_Ui/popular_week_ui.dart';
+import 'package:meetvibe/presention/event/event_Ui/category_filtered_ui.dart';
 import 'package:meetvibe/presention/profile/profile_ui/security.dart';
 import 'package:meetvibe/presention/profile/profile_ui/support_Help.dart';
 import 'package:meetvibe/presention/profile/profile_ui/faqs_ui.dart';
@@ -42,6 +44,10 @@ class AppPages {
   static const initial = AppRoutes.onloding1;
   
   static final routes = [
+    GetPage(
+      name: AppRoutes.initial, 
+      page: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+    ),
     GetPage(name: AppRoutes.onloding1, page: () => const OnlodingScreen()),
     GetPage(name: AppRoutes.onloding2, page: () => Onloding2()),
     GetPage(name: AppRoutes.onloding3, page: () => Onloding3()),
@@ -71,6 +77,8 @@ class AppPages {
     GetPage(name: AppRoutes.upcamingall, page: () => const Nearbyall()),
     GetPage(name: AppRoutes.tendingcatagory, page: () => const TrendingCategoryUi()),
     GetPage(name: AppRoutes.upcominevent, page: () => const Upcaminall()),
+    GetPage(name: AppRoutes.popularweek, page: () => const PopularWeekUi()),
+    GetPage(name: AppRoutes.categoryFiltered, page: () => const CategoryFilteredUi()),
     GetPage(name: AppRoutes.notifcation, page: () =>  Notification()),
 
 

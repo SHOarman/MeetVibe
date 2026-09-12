@@ -66,7 +66,7 @@ class ConnectionRequestCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 // Meetup Subtitle
                 Text(
-                  "Attending $meetupName",
+                  meetupName,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w400,

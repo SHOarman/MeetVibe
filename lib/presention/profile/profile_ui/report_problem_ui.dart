@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:meetvibe/core/services/api_sevices/api_services.dart';
@@ -36,13 +37,14 @@ class ReportProblemController extends GetxController {
 
       final response = await GetConnect().post(
         Apiservices.settingsReportProblem,
-        {
+        jsonEncode({
           "category": selectedCategory.value,
           "subject": sub,
           "description": desc
-        },
+        }),
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         }
       );

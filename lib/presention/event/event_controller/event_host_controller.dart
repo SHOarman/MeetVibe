@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,38 +37,79 @@ class EventHostController extends GetxController {
            // Fetch and map connections dynamically so UI reflects it immediately
            try {
              final pendingRes = await GetConnect().get("${Apiservices.baseUrl}/connection/pending", headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'});
+             final sentRes = await GetConnect().get("${Apiservices.baseUrl}/connection/sent", headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'});
              final connRes = await GetConnect().get("${Apiservices.baseUrl}/connection", headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'});
              
              List pending = [];
-             if (pendingRes.statusCode == 200) pending = pendingRes.body?['data']?['requests'] ?? [];
+             if (pendingRes.statusCode == 200) pending.addAll(pendingRes.body?['data']?['requests'] ?? []);
+             if (sentRes.statusCode == 200) pending.addAll(sentRes.body?['data']?['requests'] ?? []);
              
              List allConns = [];
              if (connRes.statusCode == 200) allConns = connRes.body?['data']?['connections'] ?? [];
              
+             // Helper function to extract all possible IDs from a connection/request object
+             List<String> extractIds(dynamic obj) {
+                List<String> ids = [];
+                final keys = ['requester', 'receiver', 'sender', 'user', 'friend', 'requesterId', 'receiverId', 'senderId', 'userId'];
+                for (var k in keys) {
+                  if (obj[k] != null) {
+                     if (obj[k] is Map) {
+                        final cid = obj[k]['id'] ?? obj[k]['_id'];
+                        if (cid != null) ids.add(cid.toString());
+                     } else if (obj[k] is String) {
+                        ids.add(obj[k].toString());
+                     }
+                  }
+                }
+                if (obj['users'] != null && obj['users'] is List) {
+                   for (var u in obj['users']) {
+                      if (u is Map) {
+                        final cid = u['id'] ?? u['_id'];
+                        if (cid != null) ids.add(cid.toString());
+                      }
+                   }
+                }
+                return ids;
+             }
+
              for (var p in allParticipants) {
-                final uid = p['user']?['id'] ?? p['user']?['_id'];
+                final uid = (p['user']?['id'] ?? p['user']?['_id'])?.toString();
                 if (uid == null) continue;
                 
                 // Check if in pending
                 for (var req in pending) {
-                   final reqUid = req['requester']?['id'] ?? req['requester']?['_id'];
-                   final recvUid = req['receiver']?['id'] ?? req['receiver']?['_id'];
-                   if (reqUid == uid || recvUid == uid) {
+                   if (extractIds(req).contains(uid)) {
                       p['connectionStatus'] = 'PENDING';
+                      if (p['user'] != null && p['user'] is Map) p['user']['connectionStatus'] = 'PENDING';
+                      break;
                    }
                 }
                 
                 // Check if already connected
                 for (var c in allConns) {
-                   final reqUid = c['requester']?['id'] ?? c['requester']?['_id'];
-                   final recvUid = c['receiver']?['id'] ?? c['receiver']?['_id'];
-                   final users = c['users'] as List?;
-                   bool inUsers = false;
-                   if (users != null) {
-                      inUsers = users.any((u) => (u['id'] ?? u['_id']) == uid);
-                   }
-                   if (reqUid == uid || recvUid == uid || inUsers || (c['user']?['id'] == uid)) {
+                   if (extractIds(c).contains(uid)) {
                       p['connectionStatus'] = 'CONNECTED';
+                      if (p['user'] != null && p['user'] is Map) p['user']['connectionStatus'] = 'CONNECTED';
+                      break;
+                   }
+                }
+             }
+
+             // Also check for the host!
+             if (hostData.isNotEmpty) {
+                final hostUid = (hostData['id'] ?? hostData['_id'])?.toString();
+                if (hostUid != null) {
+                   for (var req in pending) {
+                      if (extractIds(req).contains(hostUid)) {
+                         hostData['connectionStatus'] = 'PENDING';
+                         break;
+                      }
+                   }
+                   for (var c in allConns) {
+                      if (extractIds(c).contains(hostUid)) {
+                         hostData['connectionStatus'] = 'CONNECTED';
+                         break;
+                      }
                    }
                 }
              }
@@ -100,12 +142,13 @@ class EventHostController extends GetxController {
 
       final response = await GetConnect().post(
         Apiservices.participationReview,
-        {
+        jsonEncode({
           "participantId": participantId,
           "action": action // e.g. "APPROVED"
-        },
+        }),
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         }
       );

@@ -29,17 +29,25 @@ class ProfileController extends GetxController {
 
   Future<void> fetchProfileData({bool isRetry = false}) async {
     try {
-      if (!isRetry) isLoading.value = true;
-      
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
       localImage.value = prefs.getString('local_profile_image') ?? '';
 
-      final response = await GetConnect().get(
+      // If user is not logged in yet, do not call profile API
+      if (token == null || token.isEmpty) {
+        print("Profile GET skipped: No accessToken found (User is not logged in).");
+        return;
+      }
+
+      if (!isRetry) isLoading.value = true;
+
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.get(
         Apiservices.userProfile,
         headers: {
           'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $token',
         }
       );
 
@@ -210,7 +218,9 @@ class ProfileController extends GetxController {
           : '${Apiservices.baseUrl}/user/location';
 
       print("Updating backend user location: $lat, $lng");
-      final response = await GetConnect().put(
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.put(
         url,
         {
           "lat": lat,
@@ -234,6 +244,10 @@ class ProfileController extends GetxController {
         if (refreshed) {
            await updateUserLocation(lat, lng, setAsHome: setAsHome, isRetry: true);
         }
+      } else if (response.statusCode == null && !isRetry) {
+        print("Location Update Network Error (null status): Retrying in 2s...");
+        await Future.delayed(const Duration(seconds: 2));
+        await updateUserLocation(lat, lng, setAsHome: setAsHome, isRetry: true);
       }
     } catch (e) {
       print("Location Update Error: $e");

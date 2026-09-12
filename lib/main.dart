@@ -1,4 +1,4 @@
-import 'package:device_preview/device_preview.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,9 +23,7 @@ void main() async {
   final String? token = prefs.getString('accessToken');
   final bool hasToken = (token != null && token.isNotEmpty);
 
-  runApp(
-      MyApp(hasToken: hasToken)
-  );
+  runApp(MyApp(hasToken: hasToken));
 }
 
 class MyApp extends StatelessWidget {
@@ -39,8 +37,6 @@ class MyApp extends StatelessWidget {
       title: 'MeetVibe',
       debugShowCheckedModeBanner: false,
       useInheritedMediaQuery: true,
-      locale: DevicePreview.locale(context),
-      builder: DevicePreview.appBuilder,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFF2703D),

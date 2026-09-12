@@ -82,6 +82,12 @@ class EventsMessage extends StatelessWidget {
                             'eventId': eventId,
                             'title': title,
                             'capacity': joinedCount,
+                            'venueType': event['venueType'],
+                            'onlineLink': event['onlineLink'],
+                            'startDate': event['startDate'],
+                            'startTime': event['startTime'],
+                            'endDate': event['endDate'],
+                            'endTime': event['endTime'],
                           });
                         },
                       );
@@ -182,6 +188,12 @@ class EventsMessage extends StatelessWidget {
                         'eventId': eventId,
                         'title': title,
                         'capacity': joinedCount,
+                        'venueType': event['venueType'],
+                        'onlineLink': event['onlineLink'],
+                        'startDate': event['startDate'],
+                        'startTime': event['startTime'],
+                        'endDate': event['endDate'],
+                        'endTime': event['endTime'],
                       });
                     },
                   );

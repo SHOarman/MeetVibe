@@ -12,6 +12,7 @@ class HomeController extends GetxController {
   final RxBool isLoadingJoinedEvents = false.obs;
 
   final RxBool isLoadingPopular = false.obs;
+  final RxBool isLoadingBanner = false.obs;
 
   final RxList<dynamic> nearbyEvents = <dynamic>[].obs;
   final RxList<dynamic> upcomingEvents = <dynamic>[].obs;
@@ -20,6 +21,7 @@ class HomeController extends GetxController {
   final RxList<dynamic> popularEvents = <dynamic>[].obs;
   final RxList<dynamic> dynamicCategories = <dynamic>[].obs;
   final RxSet<String> joinedEventIds = <String>{}.obs;
+  final Rx<Map<String, dynamic>?> bannerEvent = Rx<Map<String, dynamic>?>(null);
 
   @override
   void onInit() {
@@ -30,6 +32,49 @@ class HomeController extends GetxController {
     fetchJoinedEvents();
     fetchPopularEvents();
     fetchCategories();
+    fetchBannerEvent();
+  }
+
+  Future<void> fetchBannerEvent({bool isRetry = false}) async {
+    try {
+      if (!isRetry) isLoadingBanner.value = true;
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      final getConnect = GetConnect();
+      getConnect.timeout = const Duration(seconds: 30);
+      final response = await getConnect.get(
+        '${Apiservices.baseUrl}/event/banner',
+        headers: {
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        }
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.body['data'];
+        if (data != null && data['event'] != null) {
+          bannerEvent.value = data['event'];
+        } else {
+          bannerEvent.value = null;
+        }
+      } else if (response.statusCode == 401 && !isRetry) {
+        final authController = Get.isRegistered<Authcontroller>() ? Get.find<Authcontroller>() : Get.put(Authcontroller());
+        final refreshed = await authController.refreshTokenAPI();
+        if (refreshed) {
+           await fetchBannerEvent(isRetry: true);
+        }
+      } else if (response.statusCode == null && !isRetry) {
+        print("Banner Event GET Network Error (null status): Retrying in 2s...");
+        await Future.delayed(const Duration(seconds: 2));
+        await fetchBannerEvent(isRetry: true);
+      }
+    } catch (e) {
+      print('Error fetching banner event: $e');
+      bannerEvent.value = null;
+    } finally {
+      if (!isRetry) isLoadingBanner.value = false;
+    }
   }
 
   Future<void> fetchJoinedEvents({bool isRetry = false}) async {
@@ -238,6 +283,7 @@ class HomeController extends GetxController {
       if (!isRetry) isLoadingUpcoming.value = false;
     }
   }
+
 
   Future<void> fetchPopularEvents({bool isRetry = false}) async {
     try {

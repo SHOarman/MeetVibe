@@ -137,11 +137,22 @@ class HomeEventCard extends StatelessWidget {
                     topRight: Radius.circular(16.0),
                     bottomRight: Radius.circular(16.0),
                   ),
-                  child: Image.asset(
-                    bannerImagePath,
-                    height: 160.0,
-                    fit: BoxFit.cover,
-                  ),
+                  child: bannerImagePath.startsWith('http')
+                      ? Image.network(
+                          bannerImagePath,
+                          height: 160.0,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Image.asset(
+                            'assets/image/homer.png',
+                            height: 160.0,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.asset(
+                          bannerImagePath,
+                          height: 160.0,
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
             ),

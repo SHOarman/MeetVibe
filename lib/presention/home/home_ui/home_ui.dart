@@ -10,6 +10,7 @@ import 'package:meetvibe/presention/home/home_widget/nearbycard.dart';
 import 'package:meetvibe/presention/home/home_widget/tendingcatory.dart';
 import 'package:meetvibe/presention/home/home_widget/upcomingevent.dart';
 import 'package:meetvibe/presention/home/home_controller/home_controller.dart';
+import 'package:meetvibe/core/services/api_sevices/api_services.dart';
 
 class HomeUi extends StatelessWidget {
   const HomeUi({super.key});
@@ -46,19 +47,48 @@ class HomeUi extends StatelessWidget {
               const SizedBox(height: 20),
 
               //-========================================Homecard---============================================
-              HomeEventCard(
-                title: 'Coffee Networking',
-                description: 'A perfect match for your interests',
-                attendeeCountText: '24 others going',
-                bannerImagePath: 'assets/image/homer.png',
-                attendeeAvatars: const [
-                  'assets/image/Ellipse 12 (1).png',
-                  'assets/image/Ellipse 13 (1).png',
-                  'assets/image/Ellipse 14 (1).png',
-                  'assets/image/Ellipse 15 (1).png',
-                ],
-                onJoinTap: () => Get.toNamed(AppRoutes.eventdetels),
-              ),
+              Obx(() {
+                final banner = homeController.bannerEvent.value;
+                if (homeController.isLoadingBanner.value) {
+                  return const SizedBox(height: 160.0, child: Center(child: CircularProgressIndicator()));
+                }
+                if (banner == null) {
+                  return const SizedBox();
+                }
+
+                final title = banner['title'] ?? 'Upcoming Event';
+                final description = banner['agenda'] ?? banner['category'] ?? 'A perfect match for your interests';
+                
+                int countFromDict = 0;
+                if (banner['_count'] != null && banner['_count'] is Map) {
+                  countFromDict = banner['_count']['participants'] ?? 0;
+                }
+                
+                final int joinedCount = countFromDict > 0 ? countFromDict :
+                    (banner['participations'] as List?)?.length ?? 
+                    int.tryParse(banner['participantCount']?.toString() ?? '') ?? 
+                    int.tryParse(banner['capacity']?.toString() ?? '') ?? 0;
+                
+                final attendeeText = joinedCount > 0 ? '$joinedCount others going' : 'Be the first to join';
+                
+                final String coverSource = (banner['coverImage'] != null && banner['coverImage'].toString().isNotEmpty) 
+                                           ? Apiservices.fixImageUrl(banner['coverImage']) 
+                                           : '';
+
+                return HomeEventCard(
+                  title: title,
+                  description: description,
+                  attendeeCountText: attendeeText,
+                  bannerImagePath: coverSource.isNotEmpty ? coverSource : 'assets/image/homer.png',
+                  attendeeAvatars: const [
+                    'assets/image/Ellipse 12 (1).png',
+                    'assets/image/Ellipse 13 (1).png',
+                    'assets/image/Ellipse 14 (1).png',
+                    'assets/image/Ellipse 15 (1).png',
+                  ],
+                  onJoinTap: () => Get.toNamed(AppRoutes.eventdetels, arguments: banner),
+                );
+              }),
 
               const SizedBox(height: 32),
 

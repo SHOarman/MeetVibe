@@ -580,10 +580,16 @@ class EventDetailsUi extends StatelessWidget {
                   if (eventId != null) {
                     final success = await eventJoinController.joinEvent(eventId.toString(), isFree: isFree);
                     if (success) {
-                       Get.toNamed(AppRoutes.msgInbox, arguments: {
+                       Get.offNamedUntil(AppRoutes.msgInbox, (route) => route.settings.name == AppRoutes.homeui, arguments: {
                          'eventId': eventId.toString(),
                          'title': title,
-                         'capacity': capacity,
+                         'capacity': joinedCount,
+                         'venueType': venueType,
+                         'onlineLink': onlineLink,
+                         'startDate': event?['startDate'] ?? '',
+                         'startTime': event?['startTime'] ?? '',
+                         'endDate': event?['endDate'] ?? '',
+                         'endTime': event?['endTime'] ?? '',
                        });
                     }
                   } else {

@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:meetvibe/presention/profile/profile_controller/profile_controller.dart' as prof;
 import 'package:meetvibe/presention/message/message_controller/group_chat_controller.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MsgInbox extends StatelessWidget {
   const MsgInbox({super.key});
@@ -259,6 +260,22 @@ class MsgInbox extends StatelessWidget {
     final String eventId = args?['eventId'] ?? '';
     final String title = args?['title'] ?? 'Event Chat';
     final int capacity = args?['capacity'] ?? 0;
+    final String venueType = args?['venueType']?.toString().toUpperCase() ?? '';
+    final String onlineLink = args?['onlineLink']?.toString() ?? '';
+    
+    final String startDate = args?['startDate']?.toString() ?? '';
+    final String startTime = args?['startTime']?.toString() ?? '';
+    final String endTime = args?['endTime']?.toString() ?? '';
+    
+    String formattedDate = '';
+    if (startDate.isNotEmpty) {
+      try {
+         final d = DateTime.parse(startDate).toLocal();
+         formattedDate = "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+      } catch (e) {
+         formattedDate = startDate.split('T')[0];
+      }
+    }
 
     // Fetch initial chat and participants when the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -340,6 +357,58 @@ class MsgInbox extends StatelessWidget {
       ),
       body: Column(
         children: [
+          if (venueType == 'ONLINE')
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: const Color(0xFFFFF9F5),
+              child: Row(
+                children: [
+                  const Icon(Icons.videocam_outlined, color: Color(0xFFEC6D43), size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Online Event Link", style: AppTextStyle.poppins(size: 14, weight: FontWeight.bold, color: Colors.black)),
+                        if (formattedDate.isNotEmpty || startTime.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              "${formattedDate.isNotEmpty ? formattedDate : ''} ${startTime.isNotEmpty ? '• $startTime' : ''} ${endTime.isNotEmpty ? '- $endTime' : ''}".trim(), 
+                              style: AppTextStyle.poppins(size: 11, weight: FontWeight.w600, color: const Color(0xFFEC6D43))
+                            ),
+                          ),
+                        if (onlineLink.isEmpty)
+                           Text("No link provided by host", style: AppTextStyle.poppins(size: 12, weight: FontWeight.w400, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                  if (onlineLink.isNotEmpty)
+                    ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          var link = onlineLink;
+                          if (!link.startsWith('http://') && !link.startsWith('https://')) {
+                            link = 'https://$link';
+                          }
+                          final uri = Uri.parse(link);
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } catch (e) {
+                          Get.snackbar("Error", "Could not open link", backgroundColor: Colors.red, colorText: Colors.white);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: const Color(0xFFEC6D43),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      child: const Text("Join", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ),
+                ],
+              ),
+            ),
+            
           // Chat Bubbles List
           Expanded(
             child: Obx(() {
@@ -440,10 +509,19 @@ class MsgInbox extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.grey[200],
-                            backgroundImage: avatarSource != null ? NetworkImage(avatarSource) as ImageProvider : const AssetImage('assets/image/Avatar (2).png'),
+                          ClipOval(
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              color: Colors.grey[200],
+                              child: avatarSource != null
+                                  ? Image.network(
+                                      avatarSource,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (ctx, err, stack) => Image.asset('assets/image/Avatar (2).png', fit: BoxFit.cover),
+                                    )
+                                  : Image.asset('assets/image/Avatar (2).png', fit: BoxFit.cover),
+                            ),
                           ),
                         ],
                       ),
@@ -455,10 +533,19 @@ class MsgInbox extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.grey[200],
-                            backgroundImage: avatarSource != null ? NetworkImage(avatarSource) as ImageProvider : const AssetImage('assets/image/Avatar (1).png'),
+                          ClipOval(
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              color: Colors.grey[200],
+                              child: avatarSource != null
+                                  ? Image.network(
+                                      avatarSource,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (ctx, err, stack) => Image.asset('assets/image/image 9.png', fit: BoxFit.cover),
+                                    )
+                                  : Image.asset('assets/image/image 9.png', fit: BoxFit.cover),
+                            ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
